@@ -48,7 +48,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, currentPage, onNav
             Actividades
           </button>
           <button 
-            onClick={() => navigateTo('/incidencias')}
+            onClick={() => navigateTo('/incidences')}
             className={`w-full text-left py-3 px-4 text-white font-semibold rounded-md font-montserrat transition-colors ${
               currentPage === 'incidencias' 
                 ? 'bg-red-800' 

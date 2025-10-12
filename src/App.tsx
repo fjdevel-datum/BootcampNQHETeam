@@ -1,16 +1,20 @@
 // src/App.tsx
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Splash from "./pages/Splash";
-import Login from "./pages/Login";
-import Home from "./pages/Home";
-import Activities from "./pages/Activities";
-import Bills from "./pages/Bills";
+import Splash from "./pages/Common/Splash";
+import Login from "./pages/Common/Login";
+import Home from "./pages/Collaborator/Home";
+import Activities from "./pages/Collaborator/Activities";
+import Bills from "./pages/Collaborator/Bills";
 import Footer from "./components/Footer";
-import NewBill from "./pages/NewBill";
-import BillCheck from "./pages/BillCheck";
-import UserCards from "./pages/UserCards";
-import SeeCard from "./pages/SeeCard";
+import NewBill from "./pages/Collaborator/NewBill";
+import BillCheck from "./pages/Collaborator/BillCheck";
+import UserCards from "./pages/Collaborator/UserCards";
+import SeeCard from "./pages/Collaborator/SeeCard";
+import NewActivity from "./pages/Collaborator/NewActivity";
+import IncidenceList from "./pages/Collaborator/IncidenceList";
+import Incidences from "./pages/Collaborator/Incidences";
+import NewIncidence from "./pages/Collaborator/NewIncidence";
 
 const App: React.FC = () => {
   return (
@@ -27,6 +31,10 @@ const App: React.FC = () => {
             <Route path="/BillCheck" element={<BillCheck />} />
             <Route path="/UserCards" element={<UserCards />} />
             <Route path="/SeeCard" element={<SeeCard />} />
+            <Route path="/Activities/New" element={<NewActivity />} />
+            <Route path="/incidences" element={<Incidences />} />
+            <Route path="/incidences/list" element={<IncidenceList />} />
+            <Route path="/incidences/new" element={<NewIncidence />} />
 
           </Routes>
         </main>

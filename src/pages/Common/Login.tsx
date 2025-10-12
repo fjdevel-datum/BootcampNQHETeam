@@ -1,7 +1,7 @@
 // src/pages/Login.tsx
 import React, { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
-import Logo from "../components/Logo";
+import Logo from "../../components/Logo";
 
 interface LoginForm {
   email: string;

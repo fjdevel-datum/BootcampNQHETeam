@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import SideMenu from "../components/SideMenu"; 
+import SideMenu from "../../components/SideMenu"; 
 import { useNavigate } from "react-router-dom";
-import ActivityCard from "../components/ActivityCard";
+import ActivityCard from "../../components/ActivityCard";
 
 interface Activity {
   id: number;
@@ -115,9 +115,12 @@ const Activities: React.FC = () => {
 
         {/* Botones grandes */}
         <div className="flex flex-col space-y-3 mt-8">
-          <button className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow">
-            Agregar Actividad
+          <button
+            onClick={() => navigate("/activities/new")}
+            className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow">
+            Nueva Actividad
           </button>
+
           <button className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow">
             Generar reporte
           </button>

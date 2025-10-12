@@ -48,7 +48,7 @@ const SeeCard: React.FC = () => {
           onClick={() => navigate(-1)}
           className="flex items-center text-black font-bold mb-6 hover:text-activity transition-colors"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" /> Volver
+          <ArrowLeft className="w-5 h-5 mr-2" /> 
         </button>
 
         {/* Título */}

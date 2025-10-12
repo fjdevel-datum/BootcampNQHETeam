@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import Card from "../components/Card";
-import SideMenu from "../components/SideMenu";
+import Card from "../../components/Card";
+import SideMenu from "../../components/SideMenu";
 import { useNavigate } from "react-router-dom";
 
 interface CardData {

@@ -1,7 +1,7 @@
 // src/pages/Splash.tsx
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Logo from "../components/Logo";
+import Logo from "../../components/Logo";
 
 const Splash: React.FC = () => {
   const navigate = useNavigate();

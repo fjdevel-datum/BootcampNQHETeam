@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Camera, Paperclip, X, Check, RotateCcw, ArrowLeft } from "lucide-react";
-import BillCard from "../components/BillCard";
+import BillCard from "../../components/BillCard";
 
 interface Expense {
   id: number;

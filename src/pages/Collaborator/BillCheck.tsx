@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import ConfirmModal from "../components/ConfirmModal";
+import ConfirmModal from "../../components/ConfirmModal";
 interface BillData {
   lugar: string;
   tipo: string;
