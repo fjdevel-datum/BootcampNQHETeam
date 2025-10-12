@@ -35,6 +35,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-multipart</artifactId>
+        </dependency>
 
         <!-- Oracle JDBC Driver -->
         <dependency>
@@ -43,18 +47,59 @@
             <version>23.2.0.0</version>
         </dependency>
 
-        <!-- Tesseract-->
-        <dependency>
-            <groupId>net.sourceforge.tess4j</groupId>
-            <artifactId>tess4j</artifactId>
-            <version>5.11.0</version>
-        </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-multipart</artifactId>
+            <artifactId>quarkus-config-yaml</artifactId>
+        </dependency>
+        
+        <!-- Azure Document Intelligence -->
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-ai-documentintelligence</artifactId>
+            <version>1.0.5</version>
         </dependency>
 
+        <!-- Test -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+
+
+
+            <!-- Core: Jakarta Contexts and Dependency Injection (CDI) -->
+        <dependency>
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+            <version>4.0.1</version> <!-- Usar la versión compatible con tu JDK/Framework -->
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- Core: MicroProfile Config (para @ConfigProperty) -->
+        <dependency>
+            <groupId>org.eclipse.microprofile.config</groupId>
+            <artifactId>microprofile-config-api</artifactId>
+            <version>3.0</version> <!-- Usar la versión compatible con tu Framework -->
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- 2. Utilidad para Manejo de JSON (CRÍTICO) -->
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20231013</version> <!-- Versión actual, ajusta si es necesario -->
+        </dependency>   
+        
+
+
+       
 
 
 
@@ -68,24 +113,16 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
+
+
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest</artifactId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-rest-jackson</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
-        </dependency>
+        
+        
+       
+       
     </dependencies>
 
     <build>
