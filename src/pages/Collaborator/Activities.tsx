@@ -15,6 +15,8 @@ const Activities: React.FC = () => {
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showSortOptions, setShowSortOptions] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
   const toggleMenu = () => setMenuOpen((v) => !v);
@@ -23,13 +25,46 @@ const Activities: React.FC = () => {
     navigate(path);
   };
 
+  // 🔹 Cargar actividades desde el endpoint
   useEffect(() => {
-    const mockData: Activity[] = [
-      { id: 1, title: "Reunión de negocios", date: "2025-01-18" },
-      { id: 2, title: "Viaje a Guatemala", date: "2025-01-22" },
-      { id: 3, title: "Cena con Cliente", date: "2024-12-30" },
-    ];
-    setActivities(mockData);
+    const fetchActivities = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const response = await fetch("https://v657nslf-8080.use2.devtunnels.ms/actividad/lista", {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Error al cargar datos del servidor");
+        }
+
+        const data = await response.json();
+
+        // 🔹 Adaptar según la estructura del backend
+        // Si el backend devuelve una lista de objetos con propiedades diferentes,
+        // ajusta aquí los campos (por ejemplo, nombre y fechaRegistro).
+        const formattedData: Activity[] = data.map((item: any, index: number) => ({
+          id: item.id || index,
+          title: item.nombre || item.tipo || "Actividad sin nombre",
+          date: item.fecha || item.fechaRegistro || "2025-01-01",
+        }));
+
+        setActivities(formattedData);
+      } catch (err) {
+        console.error(err);
+        setError("No se pueden cargar los datos.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchActivities();
   }, []);
 
   const filteredAndSortedActivities = activities
@@ -97,17 +132,22 @@ const Activities: React.FC = () => {
           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-button bg-white shadow-sm"
         />
 
-        {/* Lista de actividades */}
-        <div className="space-y-3 mt-6">
-          {filteredAndSortedActivities.length === 0 && (
-            <p className="text-gray-500">No se encontraron actividades.</p>
+        {/* Estado de carga o error */}
+        <div className="mt-6">
+          {loading && <p className="text-gray-500">Cargando actividades...</p>}
+          {error && <p className="text-red-500">{error}</p>}
+          {!loading && !error && filteredAndSortedActivities.length === 0 && (
+            <p className="text-gray-500">No hay actividades.</p>
           )}
-          {filteredAndSortedActivities.map((act) => (
+        </div>
+
+        {/* Lista de actividades */}
+        <div className="space-y-3 mt-4">
+          {!loading && !error && filteredAndSortedActivities.map((act) => (
             <ActivityCard
               key={act.id}
               title={act.title}
               date={act.date}
-              // 🔹 Navega a la pantalla de gastos
               onClick={() => navigate(`/activities/${act.id}/bills`)}
             />
           ))}
@@ -117,7 +157,8 @@ const Activities: React.FC = () => {
         <div className="flex flex-col space-y-3 mt-8">
           <button
             onClick={() => navigate("/activities/new")}
-            className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow">
+            className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow"
+          >
             Nueva Actividad
           </button>
 

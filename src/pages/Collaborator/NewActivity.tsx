@@ -3,38 +3,56 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
 interface Activity {
-  id: number;
-  title: string;
-  date: string;
-  endDate?: string;
+  actividadId?: number | null;
+  nombre: string;
+  fechaInicio: string;
+  fechaFinal?: string;
+  estado?: string;
+  empleadoId?: number | null;
 }
 
 const NewActivity: React.FC = () => {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState<Activity>({
-    id: Date.now(),
-    title: "",
-    date: "",
-    endDate: "",
+    nombre: "",
+    fechaInicio: "",
+    fechaFinal: "",
+    estado: "Activa",
+    empleadoId: 1, // 🔹 ID del empleado correspondiente
   });
 
   const handleGoBack = () => navigate(-1);
 
-  const handleGuardar = () => {
-    if (!formData.title || !formData.date) {
+  const handleGuardar = async () => {
+    if (!formData.nombre || !formData.fechaInicio) {
       alert("Por favor complete los campos obligatorios.");
       return;
     }
 
-    // 🔹 Obtener actividades actuales desde localStorage
-    const stored = localStorage.getItem("activities");
-    const activities: Activity[] = stored ? JSON.parse(stored) : [];
+    try {
+      const response = await fetch("http://localhost:8080/actividad/crear", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    const newList = [...activities, formData];
-    localStorage.setItem("activities", JSON.stringify(newList));
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Error al crear la actividad");
+      }
 
-    alert("✅ Actividad agregada correctamente");
-    navigate("/activities"); // 🔹 Redirige de regreso
+      const data = await response.json();
+      console.log("✅ Actividad creada:", data);
+
+      alert("✅ Actividad agregada correctamente");
+      navigate("/activities");
+    } catch (error) {
+      console.error("Error:", error);
+      alert("No se pudo crear la actividad");
+    }
   };
 
   return (
@@ -46,7 +64,6 @@ const NewActivity: React.FC = () => {
         <ArrowLeft className="w-5 h-5" />
       </button>
 
-      {/* 🔹 Contenido principal */}
       <div className="w-full max-w-md bg-background shadow-md rounded-2xl p-6 mt-12">
         <h1 className="text-black font-bold text-center mb-6 text-activity">
           Nueva Actividad
@@ -60,9 +77,9 @@ const NewActivity: React.FC = () => {
             </label>
             <input
               type="text"
-              value={formData.title}
+              value={formData.nombre}
               onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
+                setFormData({ ...formData, nombre: e.target.value })
               }
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-activity"
               placeholder="Ingrese el nombre de la actividad"
@@ -77,9 +94,9 @@ const NewActivity: React.FC = () => {
             </label>
             <input
               type="date"
-              value={formData.date}
+              value={formData.fechaInicio}
               onChange={(e) =>
-                setFormData({ ...formData, date: e.target.value })
+                setFormData({ ...formData, fechaInicio: e.target.value })
               }
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-activity"
               required
@@ -93,9 +110,9 @@ const NewActivity: React.FC = () => {
             </label>
             <input
               type="date"
-              value={formData.endDate}
+              value={formData.fechaFinal}
               onChange={(e) =>
-                setFormData({ ...formData, endDate: e.target.value })
+                setFormData({ ...formData, fechaFinal: e.target.value })
               }
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-activity"
             />
