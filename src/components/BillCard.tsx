@@ -23,3 +23,7 @@ const ExpenseCard: React.FC<BillCardProps> = ({ title, date, amount, onClick }) 
 };
 
 export default ExpenseCard;
+export interface LoginForm {
+  email: string;
+  password: string;
+}
