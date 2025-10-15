@@ -35,10 +35,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-multipart</artifactId>
-        </dependency>
+
+
+       
+        
 
         <!-- Oracle JDBC Driver -->
         <dependency>
@@ -114,16 +114,59 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
 
-
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-multipart</artifactId>
+        </dependency>
+        <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy</artifactId>
         </dependency>
         
-        
+        <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-resteasy-jackson</artifactId>
+        </dependency>
+
+
+
+
+
+        <!--    GOOGLE STRORAGE-->
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.5.0</version> 
+        </dependency>
+       
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-drive</artifactId>
+            <version>v3-rev20250910-2.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.oauth-client</groupId>
+            <artifactId>google-oauth-client-jetty</artifactId>
+            <version>1.36.0</version>
+        </dependency>
+
+
+
+
+
+
+
+
        
        
     </dependencies>
+     <repositories>
+            <repository>
+                <id>google-maven</id>
+                <name>Google Maven</name>
+                <url>https://maven.google.com</url>
+            </repository>
+    </repositories>
 
     <build>
         <plugins>
