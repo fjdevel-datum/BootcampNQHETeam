@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.easycheck.application.dto.ActividadDTO;
+import com.easycheck.application.dto.ActividadListDTO;
+import com.easycheck.domain.model.empleado;
 import com.easycheck.domain.service.IServiceActividad;
 import com.easycheck.infrastructure.repository.ActividadRepository;
 
@@ -50,6 +52,14 @@ public class ActividadResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
         
+    }
+
+    @GET
+    @Path("/usuario/{id}")
+    public Response getActividadbyId(@PathParam("id") Long empleadoId)
+    {
+        List<ActividadListDTO> actividades = serviceActividad.getActividadByEmpleadoId(empleadoId);
+        return Response.ok(actividades).build();
     }
 
  

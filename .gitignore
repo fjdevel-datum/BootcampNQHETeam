@@ -48,3 +48,4 @@ nb-configuration.xml
 *.properties
 
 .credentials
+./tokens

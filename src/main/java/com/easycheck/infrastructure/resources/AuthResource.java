@@ -15,7 +15,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-@Path("/auth")
+@Path("/oauth2callback")
 public class AuthResource {
     @Inject
     GoogleOAuthService oAuthService;
@@ -25,24 +25,15 @@ public class AuthResource {
     @GET
     @Path("/login")
     public Response login() throws IOException {
-        GoogleAuthorizationCodeFlow flow = oAuthService.getFlow();
-        String url = flow.newAuthorizationUrl()
-                .setRedirectUri(redirectUri)
-                .build();
-        return Response.seeOther(URI.create(url)).build();
+    GoogleAuthorizationCodeFlow flow = oAuthService.getFlow();
+    String url = flow.newAuthorizationUrl()
+            .setRedirectUri(redirectUri)
+            .set("access_type", "offline")
+            .set("prompt", "consent select_account") // 🔹 fuerza a elegir cuenta
+            .build();
+    return Response.seeOther(URI.create(url)).build();
     }
 
-    @GET
-    @Path("/callback")
-    public Response oauthCallback(@QueryParam("code") String code) throws IOException
-    {
-        GoogleAuthorizationCodeFlow flow = oAuthService.getFlow();
-        TokenResponse tokenResponse = flow.newTokenRequest(code)
-        .setRedirectUri(redirectUri)
-        .execute();
-
-        Credential credential = flow.createAndStoreCredential(tokenResponse, "ernesto");
-        return Response.ok("Autenticacion exitosa. Tokens almacenados para Ernesto").build();
-    }
+    
 
 }
