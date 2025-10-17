@@ -32,7 +32,7 @@ const Activities: React.FC = () => {
         setLoading(true);
         setError(null);
 
-        const response = await fetch("https://v657nslf-8080.use2.devtunnels.ms/actividad/lista", {
+        const response = await fetch("https://v657nslf-8080.use2.devtunnels.ms/actividad/usuario/1", {
           method: "GET",
           headers: {
             "Accept": "application/json",

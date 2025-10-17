@@ -1,16 +1,4 @@
-export interface User {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL?: string | null;
-}
-
-export interface AuthResponse {
-  success: boolean;
-  user?: User;
-  error?: string;
-  code?: string;
-}
+import type { UserRole } from './user.types';
 
 export interface LoginCredentials {
   email: string;
@@ -18,8 +6,42 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-  name: string;
   email: string;
   password: string;
   confirmPassword: string;
+  name?: string;
+  nombres: string;
+  apellidos: string;
+  documentoIdentidad: string;
+  empresaId: number;
+  centroId: number;
+  rol: UserRole;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  user?: {
+    uid: string;
+    email: string | null;
+    displayName: string | null;
+    rol?: UserRole;
+    empleadoId?: number;
+    empresaId?: number;
+  };
+  userData?: UserData;
+  error?: string;
+  code?: string;
+}
+
+export interface UserData {
+  token: string;
+  uid: string;
+  email: string;
+  nombres: string;
+  apellidos: string;
+  rol: UserRole;
+  empleadoId: number;
+  empresaId: number;
+  centroId: number;
+  mensaje: string;
 }

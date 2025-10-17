@@ -1,10 +1,10 @@
-// src/pages/Login.tsx
+// src/pages/Common/Login.tsx
 
 import React, { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import Logo from "../../components/Logo";
- import { loginUser, getErrorMessage } from "../../services/authService";
+import { loginUser, getErrorMessage } from "../../services/authService";
 
 type LoginForm = {
   email: string;
@@ -17,13 +17,11 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
 
-
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm({
       ...form,
       [e.target.name]: e.target.value,
     });
-    // Limpiar error cuando el usuario empieza a escribir
     if (error) setError("");
   };
 
@@ -31,28 +29,55 @@ const Login: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    
     try {
       const result = await loginUser({
         email: form.email,
         password: form.password,
       });
-      if (result.success) {
-        console.log("Login exitoso:", result.user);
-        navigate("/home");
+
+      if (result.success && result.userData) {
+        const { rol, nombres, apellidos } = result.userData;
+        
+        console.log("✅ Login exitoso");
+        console.log("👤 Usuario:", nombres, apellidos);
+        console.log("🎭 Rol:", rol);
+        
+        // Redirigir según el rol del usuario
+        switch (rol) {
+          case "ADMIN":
+            console.log("→ Redirigiendo a Admin - See Collaborators");
+            navigate("/admin/see-collaborators");
+            break;
+            
+          case "CONTADOR":
+            console.log("→ Redirigiendo a Accountancy Dashboard");
+            navigate("/accountancy/dashboard");
+            break;
+            
+          case "EMPLEADO":
+            console.log("→ Redirigiendo a Colaborators Home");
+            navigate("/colaborators/home");
+            break;
+            
+          default:
+            console.warn("⚠️ Rol desconocido:", rol);
+            setError("Rol de usuario no reconocido");
+        }
       } else {
-        setError(getErrorMessage(result.code));
-        console.error("Error de login:", result.error);
+        setError(getErrorMessage(result.code) || result.error || "Error al iniciar sesión");
+        console.error("❌ Error de login:", result.error);
       }
-    } catch (err) {
-      setError("Error inesperado al iniciar sesión");
-      console.error("Error en login:", err);
+    } catch (err: any) {
+      setError(err.message || "Error inesperado al iniciar sesión");
+      console.error("❌ Error en login:", err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-<div className="flex justify-center items-center min-h-[70vh] bg-background font-montserrat px-4">
+    <div className="flex justify-center items-center min-h-[70vh] bg-background font-montserrat px-4">
       <div className="w-full max-w-sm p-8 bg-white shadow-lg rounded-2xl border border-gray-100">
         <div className="flex justify-center mb-8">
           <Logo width="w-32" height="h-32" />
@@ -98,7 +123,7 @@ const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-button text-white font-semibold rounded-lg hover:bg-button-hover transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg"
+            className="w-full py-3 bg-button text-white font-semibold rounded-lg hover:bg-button-hover transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
             {loading ? "Iniciando sesión..." : "Iniciar Sesión"}
           </button>

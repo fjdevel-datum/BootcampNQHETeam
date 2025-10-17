@@ -6,8 +6,8 @@ import { useNavigate } from "react-router-dom";
 interface CardData {
   id: number;
   number: string;
-  name: string;
-  brand: "visa" | "mastercard";
+  description?: string;
+  brand?: string; 
 }
 
 const Tarjetas: React.FC = () => {
@@ -18,18 +18,28 @@ const Tarjetas: React.FC = () => {
   const toggleMenu = () => setMenuOpen((v) => !v);
 
   useEffect(() => {
-    // 🔹 Simulación: aquí iría tu fetch al backend
-    const mockCards: CardData[] = [
-      { id: 1, number: "1234 5678 9101 1123", name: "Juan Perez", brand: "mastercard" },
-      { id: 2, number: "3211 1091 8765 4321", name: "Juan Perez", brand: "visa" },
-      { id: 3, number: "4532 6789 1122 9876", name: "Maria Lopez", brand: "visa" },
-    ];
-    setCards(mockCards);
+    const userId = localStorage.getItem("userId"); 
 
-    // Ejemplo backend real:
-    // fetch("/api/cards")
-    //   .then(res => res.json())
-    //   .then(data => setCards(data));
+    if (!userId) {
+      console.error("No se encontró el ID del usuario");
+      return;
+    }
+
+    fetch(`http://localhost:8080/tarjeta/usuario/${userId}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Error al cargar las tarjetas");
+        return res.json();
+      })
+      .then((data) => {
+        const formattedCards: CardData[] = data.map((t: any) => ({
+          id: t.tarjetaId,
+          number: t.numeroTarjeta,
+          brand: t.tipoTarjetaNombre, // ✅ tomamos exactamente el valor del backend
+          description: t.descripcion,
+        }));
+        setCards(formattedCards);
+      })
+      .catch((err) => console.error("Error al obtener tarjetas:", err));
   }, []);
 
   return (
@@ -59,8 +69,8 @@ const Tarjetas: React.FC = () => {
               <Card
                 key={card.id}
                 number={card.number}
-                name={card.name}
-                brand={card.brand}
+                name={card.description ?? ""}
+                brand={card.brand} 
               />
             ))
           )}

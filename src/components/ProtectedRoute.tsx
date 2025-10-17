@@ -1,23 +1,30 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { isAuthenticated, hasAnyRole } from '../services/authService';
+import type { UserRole } from '../types/user.types';
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
+  allowedRoles?: UserRole[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) => {
+  const authenticated = isAuthenticated();
+  
+  console.log('🔒 ProtectedRoute - Autenticado:', authenticated);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-background">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-button"></div>
-      </div>
-    );
+  if (!authenticated) {
+    console.log('❌ No autenticado, redirigiendo a /login');
+    return <Navigate to="/login" replace />;
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  if (allowedRoles && !hasAnyRole(allowedRoles)) {
+    console.log('❌ Rol no permitido, redirigiendo a /unauthorized');
+    return <Navigate to="/unauthorized" replace />;
+  }
+
+  console.log('✅ Acceso permitido');
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

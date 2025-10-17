@@ -19,7 +19,7 @@ const NewActivity: React.FC = () => {
     fechaInicio: "",
     fechaFinal: "",
     estado: "Activa",
-    empleadoId: 1, // 🔹 ID del empleado correspondiente
+    empleadoId: 1, 
   });
 
   const handleGoBack = () => navigate(-1);
