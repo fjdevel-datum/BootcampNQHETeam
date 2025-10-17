@@ -49,3 +49,5 @@ nb-configuration.xml
 
 .credentials
 ./tokens
+
+src/main/java/com/easycheck/infrastructure/resources/credentials/firebaseService.json
