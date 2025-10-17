@@ -23,6 +23,13 @@ public class empleado implements Serializable {
     @Column(name = "DocumentoIdentidad")
     private String documentoIdentidad;
 
+    @Column(unique = true)
+    private String firebase_uid;
+
+    @Column(name = "rol", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private rol rol;
+
     @ManyToOne
     @JoinColumn(name = "CentroCostoId")
     private centroCosto centroCosto;
@@ -40,18 +47,22 @@ public class empleado implements Serializable {
     @OneToMany(mappedBy = "empleado")
     private List<incidencia> incidencias;
 
+    
+
 
 
     public empleado() {
     }
 
-    public empleado(Long empleadoId, String nombres, String apellidos, String documentoIdentidad, centroCosto centroCosto, empresa empresa) {
+    public empleado(Long empleadoId, String nombres, String apellidos, String documentoIdentidad, centroCosto centroCosto, empresa empresa, String firebase_uid, rol rol) {
         this.empleadoId = empleadoId;
         this.nombres = nombres;
         this.apellidos = apellidos;
         this.documentoIdentidad = documentoIdentidad;
         this.centroCosto = centroCosto;
         this.empresa = empresa;
+        this.firebase_uid = firebase_uid;
+        this.rol = rol;
     }
 
     
@@ -126,7 +137,19 @@ public class empleado implements Serializable {
     public void setIncidencias(List<incidencia> incidencias) {
         this.incidencias = incidencias;
     }
+    public String getUid() {
+        return firebase_uid;
+    }
+    public void setUid(String firebase_uid) {
+        this.firebase_uid = firebase_uid;
+    }
 
+    public rol getRol() {
+        return rol;
+    }
+    public void setRol(rol rol) {
+        this.rol = rol;
+    }
 
 }
 

@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import com.easycheck.application.dto.ActividadDTO;
 import com.easycheck.application.dto.ActividadListDTO;
-import com.easycheck.domain.model.empleado;
 import com.easycheck.domain.service.IServiceActividad;
 import com.easycheck.infrastructure.repository.ActividadRepository;
 

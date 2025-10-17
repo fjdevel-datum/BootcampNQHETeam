@@ -26,6 +26,13 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>quarkus-google-cloud-services-bom</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -61,13 +68,12 @@
 
         <!-- Test -->
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
+            <groupId>io.quarkiverse.googlecloudservices</groupId>
+            <artifactId>quarkus-google-cloud-firestore</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
 
@@ -76,25 +82,25 @@
 
             <!-- Core: Jakarta Contexts and Dependency Injection (CDI) -->
         <dependency>
-            <groupId>jakarta.enterprise</groupId>
-            <artifactId>jakarta.enterprise.cdi-api</artifactId>
-            <version>4.0.1</version> <!-- Usar la versión compatible con tu JDK/Framework -->
-            <scope>provided</scope>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId> <!-- Usar la versión compatible con tu JDK/Framework -->
+            <scope>test</scope>
         </dependency>
         
         <!-- Core: MicroProfile Config (para @ConfigProperty) -->
         <dependency>
-            <groupId>org.eclipse.microprofile.config</groupId>
-            <artifactId>microprofile-config-api</artifactId>
-            <version>3.0</version> <!-- Usar la versión compatible con tu Framework -->
+            <groupId>jakarta.enterprise</groupId>
+            <artifactId>jakarta.enterprise.cdi-api</artifactId>
+            <version>4.0.1</version> <!-- Usar la versión compatible con tu Framework -->
             <scope>provided</scope>
         </dependency>
 
         <!-- 2. Utilidad para Manejo de JSON (CRÍTICO) -->
         <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20231013</version> <!-- Versión actual, ajusta si es necesario -->
+            <groupId>org.eclipse.microprofile.config</groupId>
+            <artifactId>microprofile-config-api</artifactId>
+            <version>3.0</version>
+            <scope>provided</scope> <!-- Versión actual, ajusta si es necesario -->
         </dependency>   
         
 
@@ -105,40 +111,48 @@
 
         <!-- Quarkus JDBC Driver for Oracle -->
         <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20231013</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-oracle</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-arc</artifactId>
         </dependency>
-
         <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy-multipart</artifactId>
         </dependency>
+        
         <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-resteasy</artifactId>
         </dependency>
-        
+
+        <!-- Firebase Auth-->
         <dependency>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-resteasy-jackson</artifactId>
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>9.2.0</version>    
         </dependency>
-
-
-
-
 
         <!--    GOOGLE STRORAGE-->
         <dependency>
-            <groupId>com.google.api-client</groupId>
-            <artifactId>google-api-client</artifactId>
-            <version>2.5.0</version> 
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson</artifactId> 
         </dependency>
        
+        <dependency>
+            <groupId>com.google.api-client</groupId>
+            <artifactId>google-api-client</artifactId>
+            <version>2.5.0</version>
+        </dependency>
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-drive</artifactId>
