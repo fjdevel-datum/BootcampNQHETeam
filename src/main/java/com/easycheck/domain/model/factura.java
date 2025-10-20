@@ -28,5 +28,24 @@ public class factura implements Serializable {
         this.comprobante = comprobante;
         
     }
+    public Long getFacturaId() {
+        return facturaId;
+    }
+    public void setFacturaId(Long facturaId) {
+        this.facturaId = facturaId;
+    }
+    public String getComprobante() {
+        return comprobante;
+    }
+    public void setComprobante(String comprobante) {
+        this.comprobante = comprobante;
+    }
+    public List<gasto> getGastos() {
+        return gastos;
+    }
+    public void setGastos(List<gasto> gastos) {
+        this.gastos = gastos;
+    }
+    
 }
 
