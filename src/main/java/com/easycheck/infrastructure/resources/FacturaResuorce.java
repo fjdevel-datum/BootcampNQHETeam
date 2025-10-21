@@ -3,7 +3,7 @@ package com.easycheck.infrastructure.resources;
 import com.easycheck.application.dto.FacturaDTO;
 import com.easycheck.domain.service.IServiceFactura;
 import com.easycheck.infrastructure.repository.FacturaRepository;
-import com.oracle.svm.core.annotate.Inject;
+import jakarta.inject.Inject;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;

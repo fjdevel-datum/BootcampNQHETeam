@@ -89,9 +89,9 @@ public class ServiceEmpleadoImp implements IServiceEmpleado {
 
         try {
             empleadoRepository.persist(nuevoEmpleado);
-            System.out.println("✅ Empleado creado con ID: " + nuevoEmpleado.getEmpleadoId());
+            System.out.println("Empleado creado con ID: " + nuevoEmpleado.getEmpleadoId());
         } catch (Exception e) {
-            System.err.println("❌ Error al crear empleado: " + e.getMessage());
+            System.err.println("Error al crear empleado: " + e.getMessage());
             throw new RuntimeException("Error al guardar el empleado en la base de datos", e);
         }
 
@@ -152,9 +152,9 @@ public class ServiceEmpleadoImp implements IServiceEmpleado {
 
         try {
             empleadoRepository.persist(empleado);
-            System.out.println("✅ Empleado actualizado con ID: " + id);
+            System.out.println("Empleado actualizado con ID: " + id);
         } catch (Exception e) {
-            System.err.println("❌ Error al actualizar empleado: " + e.getMessage());
+            System.err.println("Error al actualizar empleado: " + e.getMessage());
             throw new RuntimeException("Error al actualizar el empleado", e);
         }
 
@@ -185,10 +185,18 @@ public class ServiceEmpleadoImp implements IServiceEmpleado {
             throw new IllegalArgumentException("Empresa no encontrada con ID: " + empresaId);
         }
 
+        System.out.println("Buscando empleados de la empresa: " + empresa.getEmpresaNombre());
+
+    // Obtener empleados y filtrar los que NO sean ADMIN
         List<empleado> empleados = empleadoRepository.find("empresa", empresa).list();
-        return empleados.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+    
+        List<EmpleadoDTO> resultado = empleados.stream()
+        .filter(emp -> emp.getRol() != com.easycheck.domain.model.rol.ADMIN) // Filtrar ADMIN
+        .map(this::mapToDTO)
+        .collect(Collectors.toList());
+
+
+        return resultado;
     }
 
     @Override
@@ -248,9 +256,9 @@ public class ServiceEmpleadoImp implements IServiceEmpleado {
 
         try {
             empleadoRepository.delete(empleado);
-            System.out.println("✅ Empleado eliminado con ID: " + id);
+            System.out.println("Empleado eliminado con ID: " + id);
         } catch (Exception e) {
-            System.err.println("❌ Error al eliminar empleado: " + e.getMessage());
+            System.err.println("Error al eliminar empleado: " + e.getMessage());
             throw new RuntimeException("Error al eliminar el empleado. Puede tener registros relacionados.", e);
         }
     }
