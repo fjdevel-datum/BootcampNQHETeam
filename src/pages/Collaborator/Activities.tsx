@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import SideMenu from "../../components/SideMenu"; 
 import { useNavigate } from "react-router-dom";
 import ActivityCard from "../../components/ActivityCard";
+import { fetchWithAuth, getCurrentUserData } from "../../services/authService";
 
 interface Activity {
-  id: number;
-  title: string;
-  date: string;
+  actividadId: number;
+  nombre: string;
+  estado: string;
+  empleadoId: number;
 }
 
 const Activities: React.FC = () => {
@@ -25,40 +27,35 @@ const Activities: React.FC = () => {
     navigate(path);
   };
 
-  // 🔹 Cargar actividades desde el endpoint
+  // 🔹 Cargar actividades desde el endpoint usando el usuario autenticado
   useEffect(() => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const response = await fetch("https://v657nslf-8080.use2.devtunnels.ms/actividad/usuario/1", {
-          method: "GET",
-          headers: {
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Error al cargar datos del servidor");
+        // Obtener datos del usuario actual
+        const userData = getCurrentUserData();
+        
+        if (!userData || !userData.empleadoId) {
+          setError("No se pudo identificar al usuario");
+          setLoading(false);
+          return;
         }
 
-        const data = await response.json();
+        console.log("📋 Cargando actividades para empleado ID:", userData.empleadoId);
 
-        // 🔹 Adaptar según la estructura del backend
-        // Si el backend devuelve una lista de objetos con propiedades diferentes,
-        // ajusta aquí los campos (por ejemplo, nombre y fechaRegistro).
-        const formattedData: Activity[] = data.map((item: any, index: number) => ({
-          id: item.id || index,
-          title: item.nombre || item.tipo || "Actividad sin nombre",
-          date: item.fecha || item.fechaRegistro || "2025-01-01",
-        }));
+        // Llamar al endpoint con autenticación
+        const data: Activity[] = await fetchWithAuth(
+          `http://localhost:8080/actividad/empleado/${userData.empleadoId}`
+        );
 
-        setActivities(formattedData);
-      } catch (err) {
-        console.error(err);
-        setError("No se pueden cargar los datos.");
+        console.log("✅ Actividades obtenidas:", data);
+
+        setActivities(data);
+      } catch (err: any) {
+        console.error("❌ Error al cargar actividades:", err);
+        setError(err.message || "No se pueden cargar las actividades");
       } finally {
         setLoading(false);
       }
@@ -69,11 +66,14 @@ const Activities: React.FC = () => {
 
   const filteredAndSortedActivities = activities
     .filter((act) =>
-      act.title.toLowerCase().includes(search.toLowerCase())
+      act.nombre.toLowerCase().includes(search.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortOrder === "asc") return a.date.localeCompare(b.date);
-      return b.date.localeCompare(a.date);
+      // Como no tienes fecha, ordenar por nombre o ID
+      if (sortOrder === "asc") {
+        return a.actividadId - b.actividadId;
+      }
+      return b.actividadId - a.actividadId;
     });
 
   return (
@@ -110,13 +110,13 @@ const Activities: React.FC = () => {
                   className="block w-full px-4 py-2 hover:bg-gray-100 text-left"
                   onClick={() => { setSortOrder("asc"); setShowSortOptions(false); }}
                 >
-                  Antiguo → Reciente
+                  Más Antiguas
                 </button>
                 <button
                   className="block w-full px-4 py-2 hover:bg-gray-100 text-left"
                   onClick={() => { setSortOrder("desc"); setShowSortOptions(false); }}
                 >
-                  Reciente → Antiguo
+                  Más Recientes
                 </button>
               </div>
             )}
@@ -134,10 +134,20 @@ const Activities: React.FC = () => {
 
         {/* Estado de carga o error */}
         <div className="mt-6">
-          {loading && <p className="text-gray-500">Cargando actividades...</p>}
-          {error && <p className="text-red-500">{error}</p>}
+          {loading && (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-button"></div>
+            </div>
+          )}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-700">{error}</p>
+            </div>
+          )}
           {!loading && !error && filteredAndSortedActivities.length === 0 && (
-            <p className="text-gray-500">No hay actividades.</p>
+            <div className="text-center py-8">
+              <p className="text-gray-500 text-lg">No hay actividades registradas</p>
+            </div>
           )}
         </div>
 
@@ -145,27 +155,32 @@ const Activities: React.FC = () => {
         <div className="space-y-3 mt-4">
           {!loading && !error && filteredAndSortedActivities.map((act) => (
             <ActivityCard
-              key={act.id}
-              title={act.title}
-              date={act.date}
-              onClick={() => navigate(`/activities/${act.id}/bills`)}
+              key={act.actividadId}
+              title={act.nombre}
+              date={act.estado} // Mostrar el estado como "fecha"
+              onClick={() => navigate(`/colaborators/activities/${act.actividadId}/bills`)}
             />
           ))}
         </div>
 
         {/* Botones grandes */}
-        <div className="flex flex-col space-y-3 mt-8">
-          <button
-            onClick={() => navigate("/activities/new")}
-            className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow"
-          >
-            Nueva Actividad
-          </button>
+        {!loading && !error && (
+          <div className="flex flex-col space-y-3 mt-8">
+            <button
+              onClick={() => navigate("/colaborators/activities/new")}
+              className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow transition-colors"
+            >
+              Nueva Actividad
+            </button>
 
-          <button className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow">
-            Generar reporte
-          </button>
-        </div>
+            <button 
+              className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow transition-colors"
+              onClick={() => console.log("Generar reporte")}
+            >
+              Generar reporte
+            </button>
+          </div>
+        )}
       </main>
 
       <SideMenu
