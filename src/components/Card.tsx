@@ -1,43 +1,71 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { CreditCard, User } from "lucide-react";
 
 interface CardProps {
-  number: string;
+  number: string; 
   name: string;
-  brand?: string; // ✅ ahora acepta cualquier string que venga del backend
+  brand?: string;
+  expirationDate?: string;
 }
 
-const Card: React.FC<CardProps> = ({ number, name, brand }) => {
-  const navigate = useNavigate();
-  const normalizedBrand = brand?.toLowerCase();
+const Card: React.FC<CardProps> = ({ number, name, brand = "Tarjeta", expirationDate }) => {
+  // Función para obtener el color según la marca
+  const getBrandColor = () => {
+    switch (brand.toLowerCase()) {
+      case "visa":
+        return "bg-gradient-to-br from-blue-600 to-blue-800";
+      case "mastercard":
+        return "bg-gradient-to-br from-red-600 to-orange-600";
+      case "american express":
+        return "bg-gradient-to-br from-green-600 to-teal-600";
+      default:
+        return "bg-gradient-to-br from-gray-600 to-gray-800";
+    }
+  };
+
+  // Función para enmascarar el número de tarjeta
+  const maskCardNumber = (num: string) => {
+    if (num.length < 4) return num;
+    const lastFour = num.slice(-4);
+    return `•••• •••• •••• ${lastFour}`;
+  };
 
   return (
-    <div className="bg-red-500 rounded-2xl p-4 shadow-md flex flex-col justify-between w-full max-w-sm mx-auto">
-      <div className="flex justify-between items-center">
-        <p className="text-white font-montserrat text-lg tracking-wider">
-          {number}
-        </p>
-
-        <div className="text-white">
-          {/* ✅ puedes cambiar los íconos si quieres mostrar logos distintos */}
-          {normalizedBrand?.includes("visa") && <CreditCard size={28} />}
-          {normalizedBrand?.includes("master") && <CreditCard size={28} />}
-          {!normalizedBrand && <CreditCard size={28} />}
+    <div className={`${getBrandColor()} rounded-2xl p-6 text-white shadow-lg transform transition-all hover:scale-105`}>
+      {/* Header con marca */}
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <p className="text-xs opacity-80 uppercase tracking-wider">Tarjeta Corporativa</p>
+          <p className="text-sm font-semibold mt-1">{brand}</p>
         </div>
+        <svg
+          className="w-12 h-12 opacity-80"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path d="M20 8H4V6h16v2zm0 2H4v6h16v-6zm0 8H4v2h16v-2z" />
+        </svg>
       </div>
 
-      <div className="flex justify-between items-center mt-6">
-        <p className="text-white font-montserrat">{name}</p>
-        <User size={28} className="text-white" />
+      {/* Número de tarjeta */}
+      <div className="mb-6">
+        <p className="text-xl font-mono tracking-wider">
+          {maskCardNumber(number)}
+        </p>
       </div>
 
-      <button
-        onClick={() => navigate("/SeeCard")}
-        className="mt-4 bg-black text-white font-semibold py-2 px-4 rounded-xl hover:bg-button-hover transition w-full"
-      >
-        Ver información
-      </button>
+      {/* Footer con nombre y expiración */}
+      <div className="flex justify-between items-end">
+        <div>
+          <p className="text-xs opacity-80">Titular</p>
+          <p className="text-sm font-semibold mt-1">{name}</p>
+        </div>
+        {expirationDate && (
+          <div className="text-right">
+            <p className="text-xs opacity-80">Válida hasta</p>
+            <p className="text-sm font-semibold mt-1">{expirationDate}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -5,7 +5,6 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Footer from "./components/Footer";
 
-// ========== PÁGINAS COMUNES ==========
 import Splash from "./pages/Common/Splash";
 import Login from "./pages/Common/Login";
 
@@ -57,22 +56,23 @@ const App: React.FC = () => {
               <Route path="/unauthorized" element={<Unauthorized />} />
 
               {/* ========== RUTAS DE ADMIN ========== */}
-              <Route 
-                path="/admin/add-resource" 
-                element={
-                  <ProtectedRoute allowedRoles={['ADMIN']}>
-                    <AddResource />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/admin/info-colaborators" 
-                element={
-                  <ProtectedRoute allowedRoles={['ADMIN']}>
-                    <InfoColaborators />
-                  </ProtectedRoute>
-                } 
-              />
+              {/* Rutas de Admin */}
+<Route 
+  path="/admin/info-colaborators/:id" 
+  element={
+    <ProtectedRoute allowedRoles={['ADMIN']}>
+      <InfoColaborators />
+    </ProtectedRoute>
+  } 
+/>
+<Route 
+  path="/admin/add-resource/:id" 
+  element={
+    <ProtectedRoute allowedRoles={['ADMIN']}>
+      <AddResource />
+    </ProtectedRoute>
+  } 
+/>
               <Route 
                 path="/admin/see-collaborators" 
                 element={
