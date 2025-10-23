@@ -31,20 +31,36 @@ public class EmpleadoResource {
     ContainerRequestContext requestContext;
 
     /**
-     * Endpoint para crear empleado - Solo ADMIN
+     * Endpoint para obtener el perfil del usuario autenticado
+     * GET /empleado/perfil
+     * NOTA: Este debe ir ANTES de /{empleadoId} para evitar conflictos
      */
-    @POST
-    @Path("/crear")
-    @Transactional
-    public Response crearEmpleado(EmpleadoDTO dto) {
+    @GET
+    @Path("/perfil")
+    public Response getPerfil() {
         try {
-            EmpleadoDTO respuesta = serviceEmpleado.crearEmpleado(dto);
-            return Response.status(Response.Status.CREATED).entity(respuesta).build();
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(new ErrorResponse("Error de validación", e.getMessage()))
-                .build();
+            System.out.println("👤 GET /empleado/perfil");
+            
+            // Obtener el empleado del contexto
+            empleado empleado = (empleado) requestContext.getProperty("empleado");
+            
+            if (empleado == null) {
+                String uid = (String) requestContext.getProperty("uid");
+                empleado = serviceEmpleado.buscarPorUid(uid);
+            }
+            
+            if (empleado == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity(new ErrorResponse("No encontrado", "Empleado no encontrado"))
+                    .build();
+            }
+
+            EmpleadoDTO dto = EmpleadoDTO.fromEntity(empleado);
+            System.out.println("✅ Perfil obtenido: " + dto.getNombres());
+            
+            return Response.ok(dto).build();
         } catch (Exception e) {
+            System.err.println("❌ Error al obtener perfil: " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
                 .build();
@@ -52,17 +68,24 @@ public class EmpleadoResource {
     }
 
     /**
-     * Endpoint para listar todos los empleados - Solo ADMIN
+     * Endpoint para listar todos los empleados
+     * GET /empleado/lista
      */
     @GET
     @Path("/lista")
     public Response getEmpleado() {
         try {
+            System.out.println("📋 GET /empleado/lista");
+            
             List<EmpleadoDTO> dtos = empleadoRepository.listAll().stream()
                 .map(EmpleadoDTO::fromEntity)
                 .collect(Collectors.toList());
+            
+            System.out.println("✅ Se encontraron " + dtos.size() + " empleados");
+            
             return Response.ok(dtos).build();
         } catch (Exception e) {
+            System.err.println("❌ Error al listar empleados: " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
                 .build();
@@ -70,14 +93,14 @@ public class EmpleadoResource {
     }
 
     /**
-     * Endpoint para listar empleados por empresa - Solo ADMIN
+     * Endpoint para listar empleados por empresa
      * GET /empleado/empresa/{empresaId}
      */
     @GET
     @Path("/empresa/{empresaId}")
     public Response listarEmpleadosPorEmpresa(@PathParam("empresaId") Long empresaId) {
         try {
-            System.out.println("🏢 Obteniendo empleados de la empresa ID: " + empresaId);
+            System.out.println("🏢 GET /empleado/empresa/" + empresaId);
             
             List<EmpleadoDTO> empleados = serviceEmpleado.listarEmpleadosPorEmpresa(empresaId);
             
@@ -99,29 +122,59 @@ public class EmpleadoResource {
     }
 
     /**
-     * Endpoint para obtener el perfil del usuario autenticado
+     * Obtener empleado por ID
+     * GET /empleado/{empleadoId}
+     * NOTA: Este debe ir AL FINAL para evitar conflictos con rutas específicas
      */
     @GET
-    @Path("/perfil")
-    public Response getPerfil() {
+    @Path("/{empleadoId}")
+    public Response obtenerEmpleadoPorId(@PathParam("empleadoId") Long empleadoId) {
         try {
-            // Obtener el empleado del contexto
-            empleado empleado = (empleado) requestContext.getProperty("empleado");
+            System.out.println("👤 GET /empleado/" + empleadoId);
             
-            if (empleado == null) {
-                String uid = (String) requestContext.getProperty("uid");
-                empleado = serviceEmpleado.buscarPorUid(uid);
-            }
+            EmpleadoDTO empleado = serviceEmpleado.obtenerEmpleadoPorId(empleadoId);
             
-            if (empleado == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                    .entity(new ErrorResponse("No encontrado", "Empleado no encontrado"))
-                    .build();
-            }
-
-            EmpleadoDTO dto = EmpleadoDTO.fromEntity(empleado);
-            return Response.ok(dto).build();
+            System.out.println("✅ Empleado encontrado: " + empleado.getNombres());
+            
+            return Response.ok(empleado).build();
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error: " + e.getMessage());
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse("No encontrado", e.getMessage()))
+                .build();
         } catch (Exception e) {
+            System.err.println("❌ Error interno: " + e.getMessage());
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ErrorResponse("Error interno", e.getMessage()))
+                .build();
+        }
+    }
+
+    /**
+     * Endpoint para crear empleado
+     * POST /empleado/crear
+     */
+    @POST
+    @Path("/crear")
+    @Transactional
+    public Response crearEmpleado(EmpleadoDTO dto) {
+        try {
+            System.out.println("📝 POST /empleado/crear - Nombre: " + dto.getNombres());
+            
+            EmpleadoDTO respuesta = serviceEmpleado.crearEmpleado(dto);
+            
+            System.out.println("✅ Empleado creado con ID: " + respuesta.getEmpleadoId());
+            
+            return Response.status(Response.Status.CREATED).entity(respuesta).build();
+        } catch (IllegalArgumentException e) {
+            System.err.println("❌ Error de validación: " + e.getMessage());
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(new ErrorResponse("Error de validación", e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            System.err.println("❌ Error interno: " + e.getMessage());
+            e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
                 .build();
