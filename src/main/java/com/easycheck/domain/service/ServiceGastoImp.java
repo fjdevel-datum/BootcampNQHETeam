@@ -4,9 +4,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
-
-import org.checkerframework.checker.units.qual.g;
-
 import com.easycheck.application.dto.GastoDTO;
 import com.easycheck.domain.model.actividad;
 import com.easycheck.domain.model.factura;

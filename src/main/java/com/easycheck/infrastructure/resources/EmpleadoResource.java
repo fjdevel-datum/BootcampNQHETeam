@@ -56,11 +56,11 @@ public class EmpleadoResource {
             }
 
             EmpleadoDTO dto = EmpleadoDTO.fromEntity(empleado);
-            System.out.println("✅ Perfil obtenido: " + dto.getNombres());
+            System.out.println("Perfil obtenido: " + dto.getNombres());
             
             return Response.ok(dto).build();
         } catch (Exception e) {
-            System.err.println("❌ Error al obtener perfil: " + e.getMessage());
+            System.err.println("Error al obtener perfil: " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
                 .build();
@@ -75,17 +75,17 @@ public class EmpleadoResource {
     @Path("/lista")
     public Response getEmpleado() {
         try {
-            System.out.println("📋 GET /empleado/lista");
+            System.out.println("GET /empleado/lista");
             
             List<EmpleadoDTO> dtos = empleadoRepository.listAll().stream()
                 .map(EmpleadoDTO::fromEntity)
                 .collect(Collectors.toList());
             
-            System.out.println("✅ Se encontraron " + dtos.size() + " empleados");
+            System.out.println("Se encontraron " + dtos.size() + " empleados");
             
             return Response.ok(dtos).build();
         } catch (Exception e) {
-            System.err.println("❌ Error al listar empleados: " + e.getMessage());
+            System.err.println("Error al listar empleados: " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
                 .build();
@@ -100,20 +100,20 @@ public class EmpleadoResource {
     @Path("/empresa/{empresaId}")
     public Response listarEmpleadosPorEmpresa(@PathParam("empresaId") Long empresaId) {
         try {
-            System.out.println("🏢 GET /empleado/empresa/" + empresaId);
+            System.out.println("GET /empleado/empresa/" + empresaId);
             
             List<EmpleadoDTO> empleados = serviceEmpleado.listarEmpleadosPorEmpresa(empresaId);
             
-            System.out.println("✅ Se encontraron " + empleados.size() + " empleados");
+            System.out.println("Se encontraron " + empleados.size() + " empleados");
             
             return Response.ok(empleados).build();
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ Error de validación: " + e.getMessage());
+            System.err.println("Error de validación: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(new ErrorResponse("Error de validación", e.getMessage()))
                 .build();
         } catch (Exception e) {
-            System.err.println("❌ Error al obtener empleados: " + e.getMessage());
+            System.err.println("Error al obtener empleados: " + e.getMessage());
             e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", "No se pudieron obtener los empleados"))
@@ -138,12 +138,12 @@ public class EmpleadoResource {
             
             return Response.ok(empleado).build();
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ Error: " + e.getMessage());
+            System.err.println("Error: " + e.getMessage());
             return Response.status(Response.Status.NOT_FOUND)
                 .entity(new ErrorResponse("No encontrado", e.getMessage()))
                 .build();
         } catch (Exception e) {
-            System.err.println("❌ Error interno: " + e.getMessage());
+            System.err.println("Error interno: " + e.getMessage());
             e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
@@ -160,20 +160,20 @@ public class EmpleadoResource {
     @Transactional
     public Response crearEmpleado(EmpleadoDTO dto) {
         try {
-            System.out.println("📝 POST /empleado/crear - Nombre: " + dto.getNombres());
+            System.out.println("POST /empleado/crear - Nombre: " + dto.getNombres());
             
             EmpleadoDTO respuesta = serviceEmpleado.crearEmpleado(dto);
             
-            System.out.println("✅ Empleado creado con ID: " + respuesta.getEmpleadoId());
+            System.out.println("Empleado creado con ID: " + respuesta.getEmpleadoId());
             
             return Response.status(Response.Status.CREATED).entity(respuesta).build();
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ Error de validación: " + e.getMessage());
+            System.err.println("Error de validación: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(new ErrorResponse("Error de validación", e.getMessage()))
                 .build();
         } catch (Exception e) {
-            System.err.println("❌ Error interno: " + e.getMessage());
+            System.err.println("Error interno: " + e.getMessage());
             e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
