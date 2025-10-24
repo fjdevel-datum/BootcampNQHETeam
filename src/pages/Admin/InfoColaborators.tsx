@@ -6,7 +6,7 @@ import { fetchWithAuth } from "../../services/authService";
 
 interface Recurso {
   tarjetaId: number;
-  tipoTarjetaId: number | null;
+  tipoId: number | null;
   numeroTarjeta: string;
   fechaExpiracion: string | null;
   descripcion: string;
@@ -40,34 +40,18 @@ const InfoColaborators: React.FC = () => {
           return;
         }
 
-        console.log("Cargando información del colaborador ID:", id);
-
-        // Obtener información del colaborador
-        const colabData: Colaborador = await fetchWithAuth(
-          `http://localhost:8080/empleado/${id}`
-        );
-
-        console.log("✅ Colaborador obtenido:", colabData);
+        const colabData: Colaborador = await fetchWithAuth(`http://localhost:8080/empleado/${id}`);
         setColaborador(colabData);
 
-        // Obtener recursos (tarjetas) del colaborador
         try {
-          const recursoData: Recurso[] = await fetchWithAuth(
-            `http://localhost:8080/tarjeta/usuario/${id}`
-          );
-          console.log("Recursos obtenidos:", recursoData);
+          const recursoData: Recurso[] = await fetchWithAuth(`http://localhost:8080/tarjeta/usuario/${id}`);
           setRecursos(recursoData);
         } catch (err: any) {
-          // Si no hay tarjetas, no mostrar como error
           if (err.message.includes("404") || err.message.includes("No se encontraron")) {
-            console.log("El colaborador no tiene tarjetas asignadas");
             setRecursos([]);
-          } else {
-            throw err;
-          }
+          } else throw err;
         }
       } catch (err: any) {
-        console.error("Error al obtener datos:", err);
         setError(err.message || "No se pudo cargar la información del colaborador");
       } finally {
         setLoading(false);
@@ -76,19 +60,6 @@ const InfoColaborators: React.FC = () => {
 
     fetchData();
   }, [id]);
-
-  const getBrandName = (tipoTarjetaId: number | null): string => {
-    switch (tipoTarjetaId) {
-      case 1:
-        return "Visa";
-      case 2:
-        return "Mastercard";
-      case 3:
-        return "American Express";
-      default:
-        return "Tarjeta";
-    }
-  };
 
   const formatExpirationDate = (fecha: string | null): string => {
     if (!fecha) return "";
@@ -103,6 +74,14 @@ const InfoColaborators: React.FC = () => {
   };
 
   const handleGoBack = () => navigate(-1);
+
+  const getTipoTarjeta = (tipoId: number | null): "VIATICO" | "CREDITO" | "CORPORATIVA" => {
+    switch (tipoId) {
+      case 1: return "VIATICO";
+      case 2: return "CREDITO";
+      default: return "CORPORATIVA";
+    }
+  };
 
   if (loading) {
     return (
@@ -121,6 +100,7 @@ const InfoColaborators: React.FC = () => {
           className="flex items-center gap-2 text-black hover:text-activity transition mb-4"
         >
           <ArrowLeft className="w-5 h-5" />
+          Volver
         </button>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-700 text-center">{error}</p>
@@ -145,17 +125,18 @@ const InfoColaborators: React.FC = () => {
         className="flex items-center gap-2 text-black hover:text-activity transition mb-6"
       >
         <ArrowLeft className="w-5 h-5" />
+        Volver
       </button>
 
       {/* Información del colaborador */}
       <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 mb-4">
           <div className="w-16 h-16 bg-activity rounded-full flex items-center justify-center">
             <span className="text-white font-bold text-2xl">
               {colaborador.nombres[0]}{colaborador.apellidos[0]}
             </span>
           </div>
-          <div>
+          <div className="text-center sm:text-left">
             <h1 className="text-xl font-bold text-black">
               {colaborador.nombres} {colaborador.apellidos}
             </h1>
@@ -169,7 +150,7 @@ const InfoColaborators: React.FC = () => {
 
       {/* Sección de recursos */}
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <h2 className="text-lg font-semibold text-black flex items-center gap-2">
             <CreditCard className="w-5 h-5" />
             Recursos Asignados
@@ -179,28 +160,28 @@ const InfoColaborators: React.FC = () => {
           </span>
         </div>
 
-        {/* Lista de tarjetas o mensaje de vacío */}
         {recursos.length === 0 ? (
           <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-300">
             <CreditCard className="w-12 h-12 mx-auto text-gray-400 mb-3" />
             <p className="text-gray-500">No hay recursos asignados a este colaborador</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {recursos.map((r) => (
-              <Card
-                key={r.tarjetaId}
-                number={r.numeroTarjeta}
-                name={r.descripcion || `${colaborador.nombres} ${colaborador.apellidos}`}
-                brand={getBrandName(r.tipoTarjetaId)}
-                expirationDate={formatExpirationDate(r.fechaExpiracion)}
-              />
+              <div key={r.tarjetaId} className="w-full max-w-sm">
+                <Card
+                  number={r.numeroTarjeta}
+                  name={`${colaborador.nombres} ${colaborador.apellidos}`}
+                  expirationDate={formatExpirationDate(r.fechaExpiracion)}
+                  tipo={getTipoTarjeta(r.tipoId)}
+                />
+              </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* Botones de acción - SIEMPRE visibles */}
+      {/* Botones de acción */}
       <div className="space-y-3">
         <button
           onClick={() => navigate(`/admin/add-resource/${id}`)}
@@ -212,12 +193,7 @@ const InfoColaborators: React.FC = () => {
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Añadir Recurso
         </button>

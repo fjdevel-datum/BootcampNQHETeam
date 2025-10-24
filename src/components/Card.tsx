@@ -1,59 +1,45 @@
 import React from "react";
 
 interface CardProps {
-  number: string; 
+  number: string;
   name: string;
-  brand?: string;
   expirationDate?: string;
+  tipo?: "VIATICO" | "CREDITO" | "CORPORATIVA";
 }
 
-const Card: React.FC<CardProps> = ({ number, name, brand = "Tarjeta", expirationDate }) => {
-  // Función para obtener el color según la marca
-  const getBrandColor = () => {
-    switch (brand.toLowerCase()) {
-      case "visa":
-        return "bg-gradient-to-br from-blue-600 to-blue-800";
-      case "mastercard":
-        return "bg-gradient-to-br from-red-600 to-orange-600";
-      case "american express":
-        return "bg-gradient-to-br from-green-600 to-teal-600";
-      default:
-        return "bg-gradient-to-br from-gray-600 to-gray-800";
-    }
-  };
-
-  // Función para enmascarar el número de tarjeta
+const Card: React.FC<CardProps> = ({ number, name, expirationDate, tipo = "CORPORATIVA" }) => {
   const maskCardNumber = (num: string) => {
     if (num.length < 4) return num;
     const lastFour = num.slice(-4);
     return `•••• •••• •••• ${lastFour}`;
   };
 
+  // Colores según tipo de tarjeta
+  const bgColor =
+    tipo === "CREDITO" ? "bg-black" :
+    tipo === "VIATICO" ? "bg-button" :
+    "bg-gray-700";
+
+  const textColor = "text-white";
+
+  const headerText =
+    tipo === "CREDITO" ? "Tarjeta de Crédito" :
+    tipo === "VIATICO" ? "Viático" :
+    "Tarjeta Corporativa";
+
   return (
-    <div className={`${getBrandColor()} rounded-2xl p-6 text-white shadow-lg transform transition-all hover:scale-105`}>
-      {/* Header con marca */}
+    <div className={`${bgColor} rounded-2xl p-6 shadow-lg transform transition-all hover:scale-105 ${textColor} w-full`}>
       <div className="flex justify-between items-start mb-8">
-        <div>
-          <p className="text-xs opacity-80 uppercase tracking-wider">Tarjeta Corporativa</p>
-          <p className="text-sm font-semibold mt-1">{brand}</p>
-        </div>
-        <svg
-          className="w-12 h-12 opacity-80"
-          fill="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <p className="text-xs opacity-80 uppercase tracking-wider">{headerText}</p>
+        <svg className="w-12 h-12 opacity-80" fill="currentColor" viewBox="0 0 24 24">
           <path d="M20 8H4V6h16v2zm0 2H4v6h16v-6zm0 8H4v2h16v-2z" />
         </svg>
       </div>
 
-      {/* Número de tarjeta */}
       <div className="mb-6">
-        <p className="text-xl font-mono tracking-wider">
-          {maskCardNumber(number)}
-        </p>
+        <p className="text-xl font-mono tracking-wider text-center">{maskCardNumber(number)}</p>
       </div>
 
-      {/* Footer con nombre y expiración */}
       <div className="flex justify-between items-end">
         <div>
           <p className="text-xs opacity-80">Titular</p>

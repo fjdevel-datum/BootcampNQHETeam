@@ -6,7 +6,7 @@ import { fetchWithAuth, getCurrentUserData } from "../../services/authService";
 
 interface CardData {
   tarjetaId: number;
-  tipoTarjetaId: number | null;
+  tipoId: number | null; 
   numeroTarjeta: string;
   fechaExpiracion: string | null;
   descripcion: string;
@@ -21,35 +21,68 @@ const UserCards: React.FC = () => {
 
   const toggleMenu = () => setMenuOpen((v) => !v);
 
+  // Formatear fecha de expiración
+  const formatExpirationDate = (fecha: string | null): string => {
+    if (!fecha) return "";
+    try {
+      const date = new Date(fecha);
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const year = String(date.getFullYear()).slice(-2);
+      return `${month}/${year}`;
+    } catch {
+      return "";
+    }
+  };
+
+  // Determinar tipo de tarjeta según tipoTarjetaId
+  const getTipoTarjeta = (tipoId: number | null): "VIATICO" | "CREDITO" | "CORPORATIVA" => {
+    console.log("getTipoTarjeta recibió:", tipoId, typeof tipoId);
+    
+    // Manejar null/undefined
+    if (tipoId === null || tipoId === undefined) {
+      return "CORPORATIVA";
+    }
+    
+    // Convertir a número por si viene como string
+    const tipo = Number(tipoId);
+    
+    switch (tipo) {
+      case 1: return "VIATICO";
+      case 2: return "CREDITO";
+      default: return "CORPORATIVA";
+    }
+  };
+
   useEffect(() => {
     const fetchCards = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Obtener datos del usuario autenticado
+        // Obtener datos del usuario logueado
         const userData = getCurrentUserData();
-
         if (!userData || !userData.empleadoId) {
           setError("No se pudo identificar al usuario");
           return;
         }
 
-        console.log("Cargando tarjetas del empleado ID:", userData.empleadoId);
-
-        // Llamar al endpoint con autenticación
         const data: CardData[] = await fetchWithAuth(
           `http://localhost:8080/tarjeta/usuario/${userData.empleadoId}`
         );
-
-        console.log("Tarjetas obtenidas:", data);
+        
+        // Debug: verificar los datos recibidos
+        console.log("Tarjetas recibidas:", data);
+        data.forEach(card => {
+          console.log(`Tarjeta ${card.numeroTarjeta}:`, {
+            tipoId: card.tipoId,
+            descripcion: card.descripcion
+          });
+        });
+        
         setCards(data);
       } catch (err: any) {
         console.error("Error al cargar tarjetas:", err);
-        
-        // Si el error es 404 (no hay tarjetas), no mostrar como error
         if (err.message.includes("404") || err.message.includes("No se encontraron")) {
-          console.log("ℹEl usuario no tiene tarjetas registradas");
           setCards([]);
         } else {
           setError(err.message || "No se pudieron cargar las tarjetas");
@@ -62,37 +95,7 @@ const UserCards: React.FC = () => {
     fetchCards();
   }, []);
 
-  const handleNavigate = (path: string) => {
-    navigate(path);
-  };
-
-  // Función para obtener el nombre de la marca según el tipoTarjetaId
-  const getBrandName = (tipoTarjetaId: number | null): string => {
-    switch (tipoTarjetaId) {
-      case 1:
-        return "Visa";
-      case 2:
-        return "Mastercard";
-      case 3:
-        return "American Express";
-      default:
-        return "Tarjeta";
-    }
-  };
-
-  // Función para formatear la fecha de expiración
-  const formatExpirationDate = (fecha: string | null): string => {
-    if (!fecha) return "";
-    
-    try {
-      const date = new Date(fecha);
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = String(date.getFullYear()).slice(-2);
-      return `${month}/${year}`;
-    } catch {
-      return "";
-    }
-  };
+  const handleNavigate = (path: string) => navigate(path);
 
   return (
     <div className="min-h-screen bg-background font-montserrat relative">
@@ -109,8 +112,8 @@ const UserCards: React.FC = () => {
       </header>
 
       {/* Contenido */}
-      <main className="px-4 py-6 md:px-8 max-w-3xl mx-auto">
-        {/* Estado de carga */}
+      <main className="px-4 py-6 md:px-8 max-w-5xl mx-auto">
+        {/* Loading */}
         {loading && (
           <div className="flex flex-col justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-button mb-4"></div>
@@ -125,24 +128,10 @@ const UserCards: React.FC = () => {
           </div>
         )}
 
-        {/* Lista de tarjetas */}
         {!loading && !error && (
           <>
             {cards.length === 0 ? (
               <div className="text-center py-12">
-                <svg
-                  className="w-16 h-16 mx-auto text-gray-400 mb-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                  />
-                </svg>
                 <p className="text-gray-500 text-lg mb-2">No tienes tarjetas registradas</p>
                 <p className="text-gray-400 text-sm">
                   Las tarjetas asignadas aparecerán aquí
@@ -150,37 +139,33 @@ const UserCards: React.FC = () => {
               </div>
             ) : (
               <>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
                   {cards.map((card) => (
                     <Card
                       key={card.tarjetaId}
                       number={card.numeroTarjeta}
                       name={card.descripcion || "Tarjeta corporativa"}
-                      brand={getBrandName(card.tipoTarjetaId)}
                       expirationDate={formatExpirationDate(card.fechaExpiracion)}
+                      tipo={getTipoTarjeta(card.tipoId)}
                     />
                   ))}
                 </div>
 
-                {/* Información adicional */}
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-gray-700 text-center">
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg text-center">
+                  <p className="text-sm text-gray-700">
                     💳 Total de tarjetas: <span className="font-semibold">{cards.length}</span>
                   </p>
                 </div>
+
+                <button
+                  onClick={() => navigate("/colaborators/see-card")}
+                  className="mt-8 w-full bg-button text-white font-semibold py-3 rounded-lg hover:bg-button-hover transition-all shadow-md"
+                >
+                  Ver detalles de tarjetas
+                </button>
               </>
             )}
           </>
-        )}
-
-        {/* Botón para ver detalles (opcional) */}
-        {!loading && !error && cards.length > 0 && (
-          <button
-            onClick={() => navigate("/colaborators/see-card")}
-            className="mt-8 w-full bg-button text-white font-semibold py-3 rounded-lg hover:bg-button-hover transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-md"
-          >
-            Ver detalles de tarjetas
-          </button>
         )}
       </main>
 
