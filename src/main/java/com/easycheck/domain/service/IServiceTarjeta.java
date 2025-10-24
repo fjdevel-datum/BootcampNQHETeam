@@ -12,4 +12,7 @@ public interface IServiceTarjeta {
     tarjetaDTO obtenerTarjetaPorId(Long tarjetaId) throws IllegalArgumentException;
     
     List<tarjetaDTO> listarTodasLasTarjetas();
+
+    tarjetaDTO actualizarFechaExpiracion(Long tarjetaId, String fechaExpiracion) throws IllegalArgumentException;
+
 }

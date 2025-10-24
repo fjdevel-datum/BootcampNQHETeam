@@ -115,7 +115,7 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
             throw new IllegalArgumentException("Empleado no encontrado con ID: " + empleadoId);
         }
 
-        System.out.println("🔍 Buscando recursos para empleado: " + empleado.getNombres() + " " + empleado.getApellidos());
+        System.out.println("Buscando recursos para empleado: " + empleado.getNombres() + " " + empleado.getApellidos());
 
         // Obtener recursos del empleado
         List<recursoAsignado> recursos = recursoAsignadoRepository
@@ -183,6 +183,86 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
             System.err.println("Error al desactivar recurso: " + e.getMessage());
             throw new RuntimeException("Error al desactivar el recurso", e);
         }
+    }
+
+    @Override
+    @Transactional
+    public RecursoAsignadoDTO actualizarRecursoAsignado(Long recursoId, Double montoMaximo, String estado) throws IllegalArgumentException {
+        
+        System.out.println("Actualizando recurso asignado ID: " + recursoId);
+        
+        if (recursoId == null) {
+            throw new IllegalArgumentException("El ID del recurso no puede ser nulo");
+        }
+
+        // Buscar el recurso asignado
+        recursoAsignado recurso = recursoAsignadoRepository.findById(recursoId);
+        if (recurso == null) {
+            throw new IllegalArgumentException("Recurso no encontrado con ID: " + recursoId);
+        }
+
+        // Validar estado si se proporciona
+        if (estado != null && !estado.trim().isEmpty()) {
+            if (!estado.equals("Activo") && !estado.equals("Inactivo")) {
+                throw new IllegalArgumentException("El estado debe ser 'Activo' o 'Inactivo'");
+            }
+            recurso.setEstado(estado);
+            System.out.println("Estado actualizado a: " + estado);
+        }
+
+        // Actualizar monto máximo si se proporciona
+        if (montoMaximo != null) {
+            if (montoMaximo < 0) {
+                throw new IllegalArgumentException("El monto máximo no puede ser negativo");
+            }
+            recurso.setMontoMaximo(montoMaximo);
+            System.out.println("Monto máximo actualizado a: " + montoMaximo);
+        }
+
+        try {
+            recursoAsignadoRepository.persist(recurso);
+            recursoAsignadoRepository.flush();
+            System.out.println("Recurso asignado actualizado exitosamente");
+        } catch (Exception e) {
+            System.err.println("Error al actualizar recurso: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error al actualizar el recurso asignado", e);
+        }
+
+        return mapToDTO(recurso);
+    }
+
+    @Override
+    public RecursoAsignadoDTO obtenerRecursoPorTarjetaYEmpleado(Long tarjetaId, Long empleadoId) throws IllegalArgumentException {
+        
+        System.out.println("Buscando recurso para tarjeta: " + tarjetaId + " y empleado: " + empleadoId);
+        
+        if (tarjetaId == null) {
+            throw new IllegalArgumentException("El ID de la tarjeta no puede ser nulo");
+        }
+        
+        if (empleadoId == null) {
+            throw new IllegalArgumentException("El ID del empleado no puede ser nulo");
+        }
+
+        // Buscar recurso asignado para esta tarjeta y empleado
+        List<recursoAsignado> recursos = recursoAsignadoRepository
+            .find("tarjeta.tarjetaId = ?1 and empleado.empleadoId = ?2", tarjetaId, empleadoId)
+            .list();
+
+        if (recursos.isEmpty()) {
+            throw new IllegalArgumentException("No se encontró asignación de tarjeta para este empleado");
+        }
+
+        // Si hay múltiples asignaciones, priorizar la activa, sino la más reciente
+        recursoAsignado recurso = recursos.stream()
+            .filter(r -> "Activo".equals(r.getEstado()))
+            .findFirst()
+            .orElse(recursos.get(0));
+
+        System.out.println("Recurso encontrado con ID: " + recurso.getRecursoId());
+
+        return mapToDTO(recurso);
     }
 
     /**

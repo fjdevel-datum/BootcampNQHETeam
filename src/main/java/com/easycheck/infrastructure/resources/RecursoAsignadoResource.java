@@ -28,20 +28,20 @@ public class RecursoAsignadoResource {
     @Transactional
     public Response crearRecursoAsignado(RecursoAsignadoDTO dto) {
         try {
-            System.out.println("📝 POST /recursoAsignado/crear");
+            System.out.println("POST /recursoAsignado/crear");
             
             RecursoAsignadoDTO respuesta = serviceRecurso.crearRecursoAsignado(dto);
             
-            System.out.println("✅ Recurso asignado con ID: " + respuesta.getRecursoId());
+            System.out.println("Recurso asignado con ID: " + respuesta.getRecursoId());
             
             return Response.status(Response.Status.CREATED).entity(respuesta).build();
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ Error de validación: " + e.getMessage());
+            System.err.println("Error de validación: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(new ErrorResponse("Error de validación", e.getMessage()))
                 .build();
         } catch (Exception e) {
-            System.err.println("❌ Error interno: " + e.getMessage());
+            System.err.println("Error interno: " + e.getMessage());
             e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
@@ -129,6 +129,70 @@ public class RecursoAsignadoResource {
     }
 
     /**
+     * Obtener recurso asignado por tarjeta y empleado
+     * GET /recursoAsignado/tarjeta/{tarjetaId}/empleado/{empleadoId}
+     */
+    @GET
+    @Path("/tarjeta/{tarjetaId}/empleado/{empleadoId}")
+    public Response getRecursoByTarjetaYEmpleado(
+            @PathParam("tarjetaId") Long tarjetaId,
+            @PathParam("empleadoId") Long empleadoId) {
+        try {
+            System.out.println("GET /recursoAsignado/tarjeta/" + tarjetaId + "/empleado/" + empleadoId);
+            
+            RecursoAsignadoDTO dto = serviceRecurso.obtenerRecursoPorTarjetaYEmpleado(tarjetaId, empleadoId);
+            
+            System.out.println("Recurso encontrado");
+            
+            return Response.ok(dto).build();
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error: " + e.getMessage());
+            return Response.status(Response.Status.NOT_FOUND)
+                .entity(new ErrorResponse("No encontrado", e.getMessage()))
+                .build();
+        } catch (Exception e) {
+            System.err.println("Error interno: " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ErrorResponse("Error interno", e.getMessage()))
+                .build();
+        }
+    }
+
+    /**
+     * Actualizar recurso asignado (monto máximo y estado)
+     * PUT /recursoAsignado/{id}
+     */
+    @PUT
+    @Path("/{id}")
+    @Transactional
+    public Response actualizarRecursoAsignado(@PathParam("id") Long id, ActualizarRecursoDTO dto) {
+        try {
+            System.out.println("PUT /recursoAsignado/" + id);
+            
+            RecursoAsignadoDTO respuesta = serviceRecurso.actualizarRecursoAsignado(
+                id, 
+                dto.montoMaximo(), 
+                dto.estado()
+            );
+            
+            System.out.println("Recurso actualizado con ID: " + respuesta.getRecursoId());
+            
+            return Response.ok(respuesta).build();
+        } catch (IllegalArgumentException e) {
+            System.err.println("Error de validación: " + e.getMessage());
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorResponse("Error de validación", e.getMessage()))
+                    .build();
+        } catch (Exception e) {
+            System.err.println("Error interno: " + e.getMessage());
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new ErrorResponse("Error interno", e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
      * Desactivar recurso
      * PUT /recursoAsignado/{id}/desactivar
      */
@@ -137,7 +201,7 @@ public class RecursoAsignadoResource {
     @Transactional
     public Response desactivarRecurso(@PathParam("id") Long id) {
         try {
-            System.out.println("🔒 PUT /recursoAsignado/" + id + "/desactivar");
+            System.out.println("PUT /recursoAsignado/" + id + "/desactivar");
             
             serviceRecurso.desactivarRecurso(id);
             
@@ -155,6 +219,8 @@ public class RecursoAsignadoResource {
         }
     }
 
+    // Records para DTOs
+    public record ActualizarRecursoDTO(Double montoMaximo, String estado) {}
     public record ErrorResponse(String error, String message) {}
     public record SuccessResponse(String message) {}
 }

@@ -14,4 +14,8 @@ public interface IServiceRecursoAsignado {
     List<RecursoAsignadoDTO> listarTodosLosRecursos();
     
     void desactivarRecurso(Long recursoId) throws IllegalArgumentException;
+
+    RecursoAsignadoDTO actualizarRecursoAsignado(Long recursoId, Double montoMaximo, String estado) throws IllegalArgumentException;
+    
+    RecursoAsignadoDTO obtenerRecursoPorTarjetaYEmpleado(Long tarjetaId, Long empleadoId) throws IllegalArgumentException;
 }

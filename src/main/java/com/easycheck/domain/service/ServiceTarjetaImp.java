@@ -6,7 +6,7 @@ import com.easycheck.domain.model.tarjeta;
 import com.easycheck.domain.model.tipoTarjeta;
 import com.easycheck.infrastructure.repository.EmpleadoRepository;
 import com.easycheck.infrastructure.repository.TarjetaRepository;
-import com.easycheck.infrastructure.repository.tipoTarjetaRepository; // ✅ Repository, no entidad
+import com.easycheck.infrastructure.repository.tipoTarjetaRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -45,7 +45,7 @@ public class ServiceTarjetaImp implements IServiceTarjeta {
             throw new IllegalArgumentException("El tipo de tarjeta es requerido");
         }
 
-        // Verificar que el tipo de tarjeta existe - CORRECTO
+        // Verificar que el tipo de tarjeta existe
         tipoTarjeta tipo = tipoTarjetaRepository.findById(dto.getTipoId());
         if (tipo == null) {
             throw new IllegalArgumentException("Tipo de tarjeta no encontrado con ID: " + dto.getTipoId());
@@ -138,6 +138,49 @@ public class ServiceTarjetaImp implements IServiceTarjeta {
         return tarjetas.stream()
             .map(this::mapToDTO)
             .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public tarjetaDTO actualizarFechaExpiracion(Long tarjetaId, String fechaExpiracion) throws IllegalArgumentException {
+        
+        System.out.println("Actualizando fecha de expiración para tarjeta ID: " + tarjetaId);
+        
+        if (tarjetaId == null) {
+            throw new IllegalArgumentException("El ID de la tarjeta no puede ser nulo");
+        }
+
+        // Buscar la tarjeta
+        tarjeta tarjeta = tarjetaRepository.findById(tarjetaId);
+        if (tarjeta == null) {
+            throw new IllegalArgumentException("Tarjeta no encontrada con ID: " + tarjetaId);
+        }
+
+        // Parsear fecha de expiración si se proporciona
+        Date nuevaFechaExpiracion = null;
+        if (fechaExpiracion != null && !fechaExpiracion.trim().isEmpty()) {
+            try {
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+                nuevaFechaExpiracion = sdf.parse(fechaExpiracion);
+            } catch (ParseException e) {
+                throw new IllegalArgumentException("Formato de fecha incorrecto. Use yyyy-MM-dd");
+            }
+        }
+
+        // Actualizar solo la fecha de expiración
+        tarjeta.setFechaExpiracion(nuevaFechaExpiracion);
+
+        try {
+            tarjetaRepository.persist(tarjeta);
+            tarjetaRepository.flush();
+            System.out.println("Fecha de expiración actualizada exitosamente");
+        } catch (Exception e) {
+            System.err.println("Error al actualizar fecha de expiración: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Error al actualizar la fecha de expiración", e);
+        }
+
+        return mapToDTO(tarjeta);
     }
 
     /**
