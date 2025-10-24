@@ -3,6 +3,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CreditCard } from "lucide-react";
 import Card from "../../components/Card";
 import { fetchWithAuth } from "../../services/authService";
+import { useLocation } from "react-router-dom";
+
+
 
 interface Recurso {
   tarjetaId: number;
@@ -21,8 +24,11 @@ interface Colaborador {
   empresaId: number;
 }
 
+
+
 const InfoColaborators: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const [colaborador, setColaborador] = useState<Colaborador | null>(null);
   const [recursos, setRecursos] = useState<Recurso[]>([]);
@@ -73,15 +79,29 @@ const InfoColaborators: React.FC = () => {
     }
   };
 
-  const handleGoBack = () => navigate(-1);
-
-  const getTipoTarjeta = (tipoId: number | null): "VIATICO" | "CREDITO" | "CORPORATIVA" => {
+const handleGoBack = () => {
+  // Si venimos desde SeeCollaborators, usar -1 para mantener historial
+  if (location.state?.fromSee) {
+    navigate(-1);
+  } else {
+    // fallback seguro
+    navigate("/admin/see-collaborators");
+  }
+};  const getTipoTarjeta = (tipoId: number | null): "VIATICO" | "CREDITO" | "CORPORATIVA" => {
     switch (tipoId) {
       case 1: return "VIATICO";
       case 2: return "CREDITO";
       default: return "CORPORATIVA";
     }
   };
+
+  // ⭐ NUEVA FUNCIÓN - Manejador de click en tarjeta
+  const handleCardClick = (tarjetaId: number) => {
+  navigate(`/admin/edit-card/${tarjetaId}/${colaborador?.empleadoId}`, {
+    state: { fromInfo: `/admin/info-colaborators/${colaborador?.empleadoId}` }
+  });
+};
+
 
   if (loading) {
     return (
@@ -168,13 +188,29 @@ const InfoColaborators: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 justify-items-center">
             {recursos.map((r) => (
-              <div key={r.tarjetaId} className="w-full max-w-sm">
+              <div 
+                key={r.tarjetaId} 
+                className="w-full max-w-sm cursor-pointer transform transition-all hover:scale-105 hover:shadow-xl"
+                onClick={() => handleCardClick(r.tarjetaId)}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    handleCardClick(r.tarjetaId);
+                  }
+                }}
+              >
                 <Card
                   number={r.numeroTarjeta}
                   name={`${colaborador.nombres} ${colaborador.apellidos}`}
                   expirationDate={formatExpirationDate(r.fechaExpiracion)}
                   tipo={getTipoTarjeta(r.tipoId)}
                 />
+                <div className="mt-2 text-center">
+                  <span className="text-xs text-gray-500 hover:text-button transition">
+                    Click para editar
+                  </span>
+                </div>
               </div>
             ))}
           </div>
@@ -196,13 +232,6 @@ const InfoColaborators: React.FC = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Añadir Recurso
-        </button>
-
-        <button
-          onClick={() => navigate(`/admin/edit-colaborator/${id}`)}
-          className="w-full bg-gray-600 text-white font-semibold py-3 rounded-lg hover:bg-gray-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-md"
-        >
-          Editar Información
         </button>
       </div>
     </div>

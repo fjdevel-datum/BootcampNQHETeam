@@ -125,7 +125,7 @@ const SeeCollaborators: React.FC = () => {
           `http://localhost:8080/empleado/empresa/${userData.empresaId}`
         );
 
-        console.log("✅ Empleados obtenidos:", data);
+        console.log("Empleados obtenidos:", data);
         setColaboradores(data);
       } catch (err: any) {
         console.error("Error al cargar colaboradores:", err);
@@ -197,7 +197,9 @@ const SeeCollaborators: React.FC = () => {
                 {filtrados.map((colab) => (
                   <button
                     key={colab.empleadoId}
-                    onClick={() => navigate(`/admin/info-colaborators/${colab.empleadoId}`)}
+                    onClick={() => navigate(`/admin/info-colaborators/${colab.empleadoId}`, {
+                    state: { fromSee: true }
+                  })}
                     className="bg-activity text-white flex items-center justify-between p-4 rounded-lg w-full hover:opacity-90 transition-opacity shadow-md"
                   >
                     <div className="flex items-center gap-3">
