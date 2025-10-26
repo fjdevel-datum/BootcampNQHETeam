@@ -244,7 +244,7 @@ const SeeCollaborators: React.FC = () => {
         {/* Botón agregar colaborador */}
         {!loading && !error && (
           <button
-            onClick={() => navigate("/admin/add-resource")}
+            onClick={() => navigate("/admin/add-colaborator")}
             className="mt-8 w-full bg-button text-white font-semibold py-3 rounded-lg hover:bg-button-hover transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-md"
           >
             Agregar Colaborador

@@ -13,6 +13,7 @@ import AddResource from "./pages/Admin/AddResource";
 import InfoColaborators from "./pages/Admin/InfoColaborators";
 import SeeCollaborators from "./pages/Admin/SeeColaborators";
 import EditCard from "./pages/Admin/EditCard";
+import AddColaborator from "./pages/Admin/AddColaborator";
 
 // ========== PÁGINAS DE COLABORADOR (EMPLEADO) ==========
 import Activities from "./pages/Collaborator/Activities";
@@ -90,6 +91,14 @@ const App: React.FC = () => {
               </ProtectedRoute>
                   } 
                         />
+              <Route
+                path="/admin/add-colaborator"
+                element={
+                  <ProtectedRoute allowedRoles={['ADMIN']}>
+                    <AddColaborator/>
+                    </ProtectedRoute>
+                }
+                />
 
 
               {/* ========== RUTAS DE COLABORADOR (EMPLEADO) ========== */}

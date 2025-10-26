@@ -39,9 +39,9 @@ const Login: React.FC = () => {
       if (result.success && result.userData) {
         const { rol, nombres, apellidos } = result.userData;
         
-        console.log("✅ Login exitoso");
-        console.log("👤 Usuario:", nombres, apellidos);
-        console.log("🎭 Rol:", rol);
+        console.log("Login exitoso");
+        console.log("Usuario:", nombres, apellidos);
+        console.log("Rol:", rol);
         
         // Redirigir según el rol del usuario
         switch (rol) {
@@ -61,16 +61,16 @@ const Login: React.FC = () => {
             break;
             
           default:
-            console.warn("⚠️ Rol desconocido:", rol);
+            console.warn("Rol desconocido:", rol);
             setError("Rol de usuario no reconocido");
         }
       } else {
         setError(getErrorMessage(result.code) || result.error || "Error al iniciar sesión");
-        console.error("❌ Error de login:", result.error);
+        console.error("Error de login:", result.error);
       }
     } catch (err: any) {
       setError(err.message || "Error inesperado al iniciar sesión");
-      console.error("❌ Error en login:", err);
+      console.error("Error en login:", err);
     } finally {
       setLoading(false);
     }

@@ -43,7 +43,7 @@ const Activities: React.FC = () => {
           return;
         }
 
-        console.log("📋 Cargando actividades para empleado ID:", userData.empleadoId);
+        console.log("Cargando actividades para empleado ID:", userData.empleadoId);
 
         // Llamar al endpoint con autenticación
         const data: Activity[] = await fetchWithAuth(
@@ -54,7 +54,7 @@ const Activities: React.FC = () => {
 
         setActivities(data);
       } catch (err: any) {
-        console.error("❌ Error al cargar actividades:", err);
+        console.error("Error al cargar actividades:", err);
         setError(err.message || "No se pueden cargar las actividades");
       } finally {
         setLoading(false);
