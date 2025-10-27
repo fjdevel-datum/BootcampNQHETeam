@@ -54,6 +54,7 @@ const UserCards: React.FC = () => {
   };
 
   useEffect(() => {
+    const apiurl = import.meta.env.VITE_API_URL;
     const fetchCards = async () => {
       try {
         setLoading(true);
@@ -67,7 +68,7 @@ const UserCards: React.FC = () => {
         }
 
         const data: CardData[] = await fetchWithAuth(
-          `http://localhost:8080/tarjeta/usuario/${userData.empleadoId}`
+          `${apiurl}/tarjeta/usuario/${userData.empleadoId}`
         );
         
         // Debug: verificar los datos recibidos
@@ -153,7 +154,7 @@ const UserCards: React.FC = () => {
 
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg text-center">
                   <p className="text-sm text-gray-700">
-                    💳 Total de tarjetas: <span className="font-semibold">{cards.length}</span>
+                     Total de recursos: <span className="font-semibold">{cards.length}</span>
                   </p>
                 </div>
 

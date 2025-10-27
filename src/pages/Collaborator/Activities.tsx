@@ -19,6 +19,7 @@ const Activities: React.FC = () => {
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const apiurl = import.meta.env.VITE_API_URL;
 
   const navigate = useNavigate();
   const toggleMenu = () => setMenuOpen((v) => !v);
@@ -47,10 +48,10 @@ const Activities: React.FC = () => {
 
         // Llamar al endpoint con autenticación
         const data: Activity[] = await fetchWithAuth(
-          `http://localhost:8080/actividad/empleado/${userData.empleadoId}`
+          `${apiurl}/actividad/empleado/${userData.empleadoId}`
         );
 
-        console.log("✅ Actividades obtenidas:", data);
+        console.log(" Actividades obtenidas:", data);
 
         setActivities(data);
       } catch (err: any) {

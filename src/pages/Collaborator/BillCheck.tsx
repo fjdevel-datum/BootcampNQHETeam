@@ -29,8 +29,7 @@ const BillCheck: React.FC = () => {
   const [formData, setFormData] = useState<BillData>(initialData);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showBackModal, setShowBackModal] = useState(false);
-
-  const handleChange = (
+    const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
@@ -41,7 +40,7 @@ const BillCheck: React.FC = () => {
   };
 
   const handleSaveConfirm = () => {
-    console.log("✅ Gasto guardado:", formData);
+    console.log(" Gasto guardado:", formData);
     alert("Gasto guardado correctamente");
     setShowSaveModal(false);
     navigate(-1);

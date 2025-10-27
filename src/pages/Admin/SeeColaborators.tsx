@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { User } from "lucide-react";
 import { fetchWithAuth, getCurrentUserData, logoutUser } from "../../services/authService";
 
+const apiurl = import.meta.env.VITE_API_URL;
 interface Colaborador {
   empleadoId: number;
   nombres: string;
@@ -122,7 +123,7 @@ const SeeCollaborators: React.FC = () => {
 
         // Llamar al endpoint con autenticación
         const data: Colaborador[] = await fetchWithAuth(
-          `http://localhost:8080/empleado/empresa/${userData.empresaId}`
+          `${apiurl}/empleado/empresa/${userData.empresaId}`
         );
 
         console.log("Empleados obtenidos:", data);

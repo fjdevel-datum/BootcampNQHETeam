@@ -14,6 +14,7 @@ interface CardInfo {
 const SeeCard: React.FC = () => {
   const navigate = useNavigate();
   const [cardData, setCardData] = useState<CardInfo | null>(null);
+  const apiurl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
 

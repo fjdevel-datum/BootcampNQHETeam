@@ -38,6 +38,7 @@ const EditCard: React.FC = () => {
   const [tarjetaData, setTarjetaData] = useState<TarjetaData | null>(null);
   const [recursoData, setRecursoData] = useState<RecursoAsignadoData | null>(null);
   
+  const apiurl = import.meta.env.VITE_API_URL;
   const [formData, setFormData] = useState({
     fechaExpiracion: "",
     montoMaximo: "",
@@ -64,11 +65,11 @@ const EditCard: React.FC = () => {
           return;
         }
 
-        const tarjeta: TarjetaData = await fetchWithAuth(`http://localhost:8080/tarjeta/${cardId}`);
+        const tarjeta: TarjetaData = await fetchWithAuth(`${apiurl}/tarjeta/${cardId}`);
         setTarjetaData(tarjeta);
 
         const recurso: RecursoAsignadoData = await fetchWithAuth(
-          `http://localhost:8080/recursoAsignado/tarjeta/${cardId}/empleado/${empleadoId}`
+          `${apiurl}/recursoAsignado/tarjeta/${cardId}/empleado/${empleadoId}`
         );
         setRecursoData(recurso);
 
@@ -76,7 +77,7 @@ const EditCard: React.FC = () => {
           ? new Date(tarjeta.fechaExpiracion).toISOString().split("T")[0]
           : "";
 
-        // ⭐ VALIDACIÓN AUTOMÁTICA: Si la fecha ya pasó, estado DEBE ser "Inactivo"
+        // VALIDACIÓN AUTOMÁTICA: Si la fecha ya pasó, estado DEBE ser "Inactivo"
         const estadoInicial = esFechaVencida(fechaFormateada) 
           ? "Inactivo" 
           : (recurso.estado || "Activo");
@@ -138,13 +139,13 @@ const EditCard: React.FC = () => {
         return;
       }
 
-      await fetchWithAuth(`http://localhost:8080/tarjeta/${cardId}/fecha-expiracion`, {
+      await fetchWithAuth(`${apiurl}/tarjeta/${cardId}/fecha-expiracion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fechaExpiracion: formData.fechaExpiracion || null })
       });
 
-      await fetchWithAuth(`http://localhost:8080/recursoAsignado/${recursoData?.recursoId}`, {
+      await fetchWithAuth(`${apiurl}/recursoAsignado/${recursoData?.recursoId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -246,12 +247,12 @@ const handleGoBack = () => {
         </div>
       )}
 
-      {/* ⭐ ALERTA DE TARJETA VENCIDA */}
+      {/*  ALERTA DE TARJETA VENCIDA */}
       {fechaVencida && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
           <div>
-            <p className="text-amber-800 font-semibold">⚠️ Tarjeta Expirada</p>
+            <p className="text-amber-800 font-semibold"> Tarjeta Expirada</p>
             <p className="text-amber-700 text-sm">Esta tarjeta ha expirado y se encuentra desactivada. No puede activarse con una fecha vencida.</p>
           </div>
         </div>
@@ -299,7 +300,7 @@ const handleGoBack = () => {
           />
           <p className="text-xs text-gray-500 mt-1">
             {fechaVencida 
-              ? "⚠️ Esta fecha ya pasó. Actualice a una fecha futura para poder activar la tarjeta."
+              ? "Esta fecha ya pasó. Actualice a una fecha futura para poder activar la tarjeta."
               : "Fecha de expiración de la tarjeta"}
           </p>
         </div>
@@ -338,7 +339,7 @@ const handleGoBack = () => {
             className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-button focus:border-transparent transition ${
               fechaVencida ? 'bg-gray-100 cursor-not-allowed' : ''
             }`}
-            disabled={saving || fechaVencida} // ⭐ Bloqueado si fecha vencida
+            disabled={saving || fechaVencida} //  Bloqueado si fecha vencida
           >
             <option value="Activo">Activo</option>
             <option value="Inactivo">Inactivo</option>

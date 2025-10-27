@@ -34,6 +34,7 @@ const InfoColaborators: React.FC = () => {
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const apiurl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -46,11 +47,11 @@ const InfoColaborators: React.FC = () => {
           return;
         }
 
-        const colabData: Colaborador = await fetchWithAuth(`http://localhost:8080/empleado/${id}`);
+        const colabData: Colaborador = await fetchWithAuth(`${apiurl}/empleado/${id}`);
         setColaborador(colabData);
 
         try {
-          const recursoData: Recurso[] = await fetchWithAuth(`http://localhost:8080/tarjeta/usuario/${id}`);
+          const recursoData: Recurso[] = await fetchWithAuth(`${apiurl}/tarjeta/usuario/${id}`);
           setRecursos(recursoData);
         } catch (err: any) {
           if (err.message.includes("404") || err.message.includes("No se encontraron")) {
@@ -95,7 +96,6 @@ const handleGoBack = () => {
     }
   };
 
-  // ⭐ NUEVA FUNCIÓN - Manejador de click en tarjeta
   const handleCardClick = (tarjetaId: number) => {
   navigate(`/admin/edit-card/${tarjetaId}/${colaborador?.empleadoId}`, {
     state: { fromInfo: `/admin/info-colaborators/${colaborador?.empleadoId}` }

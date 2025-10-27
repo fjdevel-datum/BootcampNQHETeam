@@ -19,7 +19,7 @@ const NewBill: React.FC = () => {
     monto: "",
     metodoPago: "",
   });
-
+  const apiurl = import.meta.env.VITE_API_URL;
   const handleGoBack = () => navigate(-1);
 
   // 🔹 Simula la respuesta del backend/OCR

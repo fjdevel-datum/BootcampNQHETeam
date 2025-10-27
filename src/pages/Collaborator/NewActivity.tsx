@@ -14,7 +14,7 @@ interface Activity {
 
 const NewActivity: React.FC = () => {
   const navigate = useNavigate();
-
+  const apiurl = import.meta.env.VITE_API_URL;
   const [formData, setFormData] = useState<Activity>({
     nombre: "",
     fechaInicio: "",
@@ -71,26 +71,26 @@ const NewActivity: React.FC = () => {
     setError(null);
 
     try {
-      console.log("📝 Creando actividad con datos:", formData);
+      console.log(" Creando actividad con datos:", formData);
 
       // Llamar al endpoint con autenticación
       const data = await fetchWithAuth(
-        "http://localhost:8080/actividad",
+        `${apiurl}/actividad`,
         {
           method: "POST",
           body: JSON.stringify(formData),
         }
       );
 
-      console.log("✅ Actividad creada exitosamente:", data);
+      console.log(" Actividad creada exitosamente:", data);
 
       // Mostrar mensaje de éxito
-      alert(`✅ Actividad "${data.nombre}" creada correctamente`);
+      alert(`Actividad "${data.nombre}" creada correctamente`);
 
       // Redirigir a la lista de actividades
       navigate("/colaborators/activities");
     } catch (error: any) {
-      console.error("❌ Error al crear actividad:", error);
+      console.error(" Error al crear actividad:", error);
       setError(error.message || "No se pudo crear la actividad. Por favor, intente nuevamente.");
     } finally {
       setLoading(false);

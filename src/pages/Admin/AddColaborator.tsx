@@ -45,7 +45,7 @@ interface FormErrors {
 
 const AddColaborator: React.FC = () => {
   const navigate = useNavigate();
-
+  const apiurl = import.meta.env.VITE_API_URL;
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [centros, setCentros] = useState<CentroCosto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ const AddColaborator: React.FC = () => {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  // ✅ Obtener empresaId usando el servicio de autenticación
+  //  Obtener empresaId usando el servicio de autenticación
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -82,7 +82,7 @@ const AddColaborator: React.FC = () => {
           return;
         }
 
-        console.log("✅ EmpresaId obtenido:", userData.empresaId);
+        console.log("EmpresaId obtenido:", userData.empresaId);
         setEmpresaId(userData.empresaId);
 
       } catch (err: any) {
@@ -96,7 +96,7 @@ const AddColaborator: React.FC = () => {
     initializeData();
   }, []);
 
-  // ✅ Cargar centros de costo una vez que tengamos empresaId
+  // Cargar centros de costo una vez que tengamos empresaId
   useEffect(() => {
     if (!empresaId) return;
 
@@ -106,10 +106,10 @@ const AddColaborator: React.FC = () => {
 
         // Usar fetchWithAuth del servicio
         const data: CentroCosto[] = await fetchWithAuth(
-          "http://localhost:8080/centroCosto/lista"
+          `${apiurl}/centroCosto/lista`
         );
 
-        console.log("✅ Centros de costo cargados:", data.length);
+        console.log("Centros de costo cargados:", data.length);
         setCentros(data);
 
       } catch (err: any) {
@@ -207,7 +207,7 @@ const AddColaborator: React.FC = () => {
 
       // Usar fetchWithAuth para la petición
       await fetchWithAuth(
-        "http://localhost:8080/auth/registro",
+        `${apiurl}/auth/registro`,
         {
           method: "POST",
           body: JSON.stringify(requestData),
@@ -237,7 +237,7 @@ const AddColaborator: React.FC = () => {
 
   const handleGoBack = () => navigate("/admin/see-collaborators");
 
-  // ✅ Mostrar loader mientras carga datos iniciales
+  //  Mostrar loader mientras carga datos iniciales
   if (loadingData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

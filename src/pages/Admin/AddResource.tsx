@@ -24,6 +24,8 @@ const AddResource: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const apiurl = import.meta.env.VITE_API_URL;
+
   const [formData, setFormData] = useState({
     numeroTarjeta: "",
     tipoId: null as number | null,
@@ -38,7 +40,7 @@ const AddResource: React.FC = () => {
       if (!id) return;
       try {
         const data: Colaborador = await fetchWithAuth(
-          `http://localhost:8080/empleado/${id}`
+          `${apiurl}/empleado/${id}`
         );
         setColaborador(data);
       } catch {
@@ -53,7 +55,7 @@ const AddResource: React.FC = () => {
     const fetchTipos = async () => {
       try {
         const data: TipoTarjeta[] = await fetchWithAuth(
-          "http://localhost:8080/tipoTarjeta/lista"
+      `${apiurl}/tipoTarjeta/lista`
         );
         setTiposTarjeta(data);
       } catch {
@@ -81,20 +83,20 @@ const AddResource: React.FC = () => {
     try {
       // Crear tarjeta
       const tarjetaCreada = await fetchWithAuth(
-        "http://localhost:8080/tarjeta/crearTarjeta",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            numeroTarjeta: formData.numeroTarjeta,
-            tipoId: formData.tipoId,
-            fechaExpiracion: formData.fechaExpiracion,
-            descripcion: formData.descripcion,
-          }),
-        }
-      );
+  `${apiurl}/tarjeta/crearTarjeta`,
+  {
+    method: "POST",
+    body: JSON.stringify({
+      numeroTarjeta: formData.numeroTarjeta,
+      tipoId: formData.tipoId,
+      fechaExpiracion: formData.fechaExpiracion,
+      descripcion: formData.descripcion,
+    }),
+  }
+);
 
       // Asignar tarjeta al colaborador
-      await fetchWithAuth("http://localhost:8080/recursoAsignado/crear", {
+      await fetchWithAuth(`${apiurl}/recursoAsignado/crear`, {
         method: "POST",
         body: JSON.stringify({
           tarjetaId: tarjetaCreada.tarjetaId,
