@@ -1,5 +1,6 @@
 package com.easycheck.domain.service;
 
+import com.easycheck.application.dto.InformacionRecursoDTO;
 import com.easycheck.application.dto.RecursoAsignadoDTO;
 import com.easycheck.domain.model.empleado;
 import com.easycheck.domain.model.recursoAsignado;
@@ -10,6 +11,7 @@ import com.easycheck.infrastructure.repository.TarjetaRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 
 import java.text.ParseException;
@@ -278,5 +280,73 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
             recurso.getMontoMaximo(),
             recurso.getEstado()
         );
+    
     }
+
+    /////////////////////////////////////////////////////////
+    /// Informacion de Recursos por empleado
+    /////////////////////////////////////////////////////////
+
+
+
+
+     @Inject
+    EntityManager em;
+
+    public InformacionRecursoDTO obtenerInformacionPorEmpleado(Long empleadoId) throws IllegalArgumentException{
+        Object[] result = (Object[]) em.createNativeQuery("""
+            SELECT 
+                e.empleadoid,
+                e.nombres || ' ' || e.apellidos AS nombreEmpleado,
+                t.numerotarjeta,
+                TO_CHAR(r.fechaasignacion, 'YYYY-MM-DD') AS fechaAsignacion,
+                r.estado,
+                r.montomaximo,
+                NVL(SUM(g.totalmonedabase), 0) AS totalGastado,
+                ROUND((NVL(SUM(g.totalmonedabase), 0) / r.montomaximo) * 100, 2) AS porcentaje,
+                (r.montomaximo - NVL(SUM(g.totalmonedabase), 0)) AS resto
+            FROM recursoasignado r
+            JOIN empleado e ON r.empleadoid = e.empleadoid
+            JOIN tarjeta t ON t.tarjetaid = r.tarjetaid
+            LEFT JOIN gasto g ON g.recursoid = r.recursoid
+            WHERE r.empleadoid = :empleadoId
+            GROUP BY 
+                e.empleadoid, e.nombres, e.apellidos, 
+                t.numerotarjeta, r.fechaasignacion, r.estado, r.montomaximo
+        """)
+        .setParameter("empleadoId", empleadoId)
+        .getSingleResult();
+
+        Long id = ((Number) result[0]).longValue();
+        String nombre = (String) result[1];
+        String tarjeta = (String) result[2];
+        String fecha = (String) result[3];
+        String estado = (String) result[4];
+        Double montoMaximo = ((Number) result[5]).doubleValue();
+        Double totalGastado = ((Number) result[6]).doubleValue();
+        Double porcentaje = ((Number) result[7]).doubleValue();
+        Double resto = ((Number) result[8]).doubleValue();
+
+        Double montoActual = resto; // monto disponible actual
+
+        return new InformacionRecursoDTO(
+            id,
+            nombre,
+            tarjeta,
+            fecha,
+            estado,
+            montoMaximo,
+            montoActual,
+            porcentaje,
+            resto
+        );
+    }
+
+
+
+
+
+
+
+
 }

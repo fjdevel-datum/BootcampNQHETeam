@@ -55,4 +55,14 @@ public class OCRResource {
                     .build();
         }
     }
+
+
+    //enviar la informacion del json estructurado por gemini
+    
+
+
+
+
+
+
 }

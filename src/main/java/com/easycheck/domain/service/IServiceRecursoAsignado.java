@@ -1,5 +1,6 @@
 package com.easycheck.domain.service;
 
+import com.easycheck.application.dto.InformacionRecursoDTO;
 import com.easycheck.application.dto.RecursoAsignadoDTO;
 import java.util.List;
 
@@ -18,4 +19,8 @@ public interface IServiceRecursoAsignado {
     RecursoAsignadoDTO actualizarRecursoAsignado(Long recursoId, Double montoMaximo, String estado) throws IllegalArgumentException;
     
     RecursoAsignadoDTO obtenerRecursoPorTarjetaYEmpleado(Long tarjetaId, Long empleadoId) throws IllegalArgumentException;
+
+    InformacionRecursoDTO obtenerInformacionPorEmpleado(Long empleadoId) throws IllegalArgumentException;
+    
+
 }
