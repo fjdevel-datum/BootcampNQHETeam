@@ -20,7 +20,7 @@ public interface IServiceRecursoAsignado {
     
     RecursoAsignadoDTO obtenerRecursoPorTarjetaYEmpleado(Long tarjetaId, Long empleadoId) throws IllegalArgumentException;
 
-    InformacionRecursoDTO obtenerInformacionPorEmpleado(Long empleadoId) throws IllegalArgumentException;
+    InformacionRecursoDTO obtenerInformacionPorEmpleadoYTarjeta(Long empleadoId, Long tarjetaId) throws IllegalArgumentException;
     
 
 }

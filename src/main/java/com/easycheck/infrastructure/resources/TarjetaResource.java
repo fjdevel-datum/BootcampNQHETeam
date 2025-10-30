@@ -136,7 +136,7 @@ public class TarjetaResource {
     }
 
     /**
-     * ⭐ NUEVO ENDPOINT - Actualizar fecha de expiración de una tarjeta
+     * NUEVO ENDPOINT - Actualizar fecha de expiración de una tarjeta
      * PUT /tarjeta/{id}/fecha-expiracion
      */
     @PUT
