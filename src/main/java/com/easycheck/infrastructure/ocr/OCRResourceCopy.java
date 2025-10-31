@@ -13,8 +13,8 @@ import com.easycheck.infrastructure.ocr.service.DraftGastoService;
 import com.easycheck.infrastructure.ocr.service.Extractor;
 
 
-@Path("/ocr")
-public class OCRResource {
+@Path("/ocr2")
+public class OCRResourceCopy {
 
     @Inject
     OCRService ocrService;
@@ -26,7 +26,7 @@ public class OCRResource {
     DraftGastoService draftGastoService;
 
     @POST
-    @Path("/extract")
+    @Path("/extract2")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
     public Response extractTextFromImage(@MultipartForm FileForm form) {
@@ -38,18 +38,21 @@ public class OCRResource {
                         .build();
             }
 
-            // Extraer texto usando el servicio OCR
+         // 1. Extraer texto usando el servicio OCR
             String extractedText = ocrService.extractText(form.file);
 
-            //Usar LLaMA para estructurar y formatear el JSON
+            // 2. Usar Gemini para estructurar y formatear el JSON
             String structuredJson = extractor.generateGastoJson(extractedText);
             
+            // 3. Guardar el JSON temporalmente y obtener un ID
+            String draftId = draftGastoService.saveDraft(structuredJson);
             
-            // Crear respuesta JSON
-            String jsonResponse = String.format("{\"text\": \"%s\"}", 
-                    extractedText.replace("\"", "\\\"").replace("\n", "\\n"));
+            // 4. Devolver el JSON estructurado y el ID al front-end
+            // El front-end puede usar el JSON para pre-llenar y guardar el ID.
+            String responseJson = String.format("{\"draftId\": \"%s\", \"geminiData\": %s}",
+                    draftId, structuredJson);
             
-            return Response.ok(structuredJson).build();
+            return Response.ok(responseJson).build();
             
         } catch (Exception e) {
             String errorResponse = String.format("{\"error\": \"Error processing file: %s\"}", 

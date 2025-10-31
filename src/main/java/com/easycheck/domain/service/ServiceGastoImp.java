@@ -2,7 +2,6 @@ package com.easycheck.domain.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -18,13 +17,11 @@ import com.easycheck.domain.model.factura;
 import com.easycheck.domain.model.gasto;
 import com.easycheck.domain.model.moneda;
 import com.easycheck.domain.model.recursoAsignado;
-import com.easycheck.domain.model.tarjeta;
 import com.easycheck.domain.model.tipoGasto;
 import com.easycheck.infrastructure.repository.ActividadRepository;
 import com.easycheck.infrastructure.repository.FacturaRepository;
 import com.easycheck.infrastructure.repository.GastoRepository;
 import com.easycheck.infrastructure.repository.RecursoAsignadoRepository;
-import com.easycheck.infrastructure.repository.TarjetaRepository;
 import com.easycheck.infrastructure.repository.monedaRepository;
 import com.easycheck.infrastructure.repository.tipoGastoRepository;
 import jakarta.inject.Inject;
@@ -55,6 +52,7 @@ public class ServiceGastoImp implements IServiceGasto {
 
 
     @Override
+    @Transactional
     public GastoDTO crearGasto(GastoDTO gasto)throws IllegalArgumentException
     {
         //validamos
