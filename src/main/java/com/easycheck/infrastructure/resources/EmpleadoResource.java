@@ -130,11 +130,11 @@ public class EmpleadoResource {
     @Path("/{empleadoId}")
     public Response obtenerEmpleadoPorId(@PathParam("empleadoId") Long empleadoId) {
         try {
-            System.out.println("👤 GET /empleado/" + empleadoId);
+            System.out.println(" GET /empleado/" + empleadoId);
             
             EmpleadoDTO empleado = serviceEmpleado.obtenerEmpleadoPorId(empleadoId);
             
-            System.out.println("✅ Empleado encontrado: " + empleado.getNombres());
+            System.out.println("Empleado encontrado: " + empleado.getNombres());
             
             return Response.ok(empleado).build();
         } catch (IllegalArgumentException e) {

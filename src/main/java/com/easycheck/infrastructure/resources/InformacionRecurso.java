@@ -1,4 +1,3 @@
-// ...existing code...
 package com.easycheck.infrastructure.resources;
 
 import jakarta.inject.Inject;
@@ -17,13 +16,17 @@ import com.easycheck.application.dto.InformacionRecursoDTO;
 @Produces(MediaType.APPLICATION_JSON)
 public class InformacionRecurso {
 
-   @Inject
-     IServiceRecursoAsignado serviceRecurso;
+    @Inject
+    IServiceRecursoAsignado serviceRecurso;
 
+    /**
+     * Consulta la información de un recurso específico asignado a un empleado.
+     */
     @GET
-    @Path("/empleado/{empleadoId}")
-    public InformacionRecursoDTO obtenerInformacion(@PathParam("empleadoId") Long empleadoId) {
-        return serviceRecurso.obtenerInformacionPorEmpleado(empleadoId);
+    @Path("/empleado/{empleadoId}/tarjeta/{tarjetaId}")
+    public InformacionRecursoDTO obtenerInformacion(
+            @PathParam("empleadoId") Long empleadoId,
+            @PathParam("tarjetaId") Long tarjetaId) {
+        return serviceRecurso.obtenerInformacionPorEmpleadoYTarjeta(empleadoId, tarjetaId);
     }
-
 }
