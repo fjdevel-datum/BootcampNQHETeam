@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "../../components/toast";
-import { CreditCard, TrendingUp, AlertCircle } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import Card from "../../components/Card";
 import SideMenu from "../../components/SideMenu";
 import { fetchWithAuth, getCurrentUserData } from "../../services/authService";

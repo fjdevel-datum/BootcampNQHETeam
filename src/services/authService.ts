@@ -69,7 +69,7 @@ export const registerUser = async (data: RegisterData): Promise<AuthResponse> =>
     }
 
     // Obtener token
-    const token = await userCredential.user.getIdToken();
+    //const token = await userCredential.user.getIdToken();
 
     // Registrar en backend
     try {

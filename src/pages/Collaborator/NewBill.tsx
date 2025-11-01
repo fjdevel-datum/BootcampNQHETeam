@@ -22,7 +22,7 @@ const NewBill: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
 
-  const apiurl = import.meta.env.VITE_API_URL;
+  //const apiurl = import.meta.env.VITE_API_URL;
   const handleGoBack = () => navigate(-1);
 
   // Simula la respuesta del backend/OCR

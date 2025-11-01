@@ -1,10 +1,10 @@
 import React, { createContext, useState, useEffect, useContext, type ReactNode } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { observeAuthState } from '../services/authService';
-import type { User } from '../types/auth.types';
+import type { UserData } from '../types/auth.types';
 
 interface AuthContextType {
-  user: User | null;
+  user: UserData | null;
   loading: boolean;
   isAuthenticated: boolean;
 }
@@ -16,7 +16,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,9 +24,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (firebaseUser) {
         setUser({
           uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL
+          email: firebaseUser.email ?? '',
+          displayName: firebaseUser.displayName ?? '',
+          photoURL: firebaseUser.photoURL ?? '',
         });
       } else {
         setUser(null);

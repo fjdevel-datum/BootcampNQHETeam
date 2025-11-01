@@ -6,7 +6,9 @@ export interface UserData {
   email: string;
   nombres: string;
   apellidos: string;
+  displayName: string;
   rol: UserRole;
+  photoUrl?: string;
   empleadoId: number;
   empresaId: number;
   centroId: number;

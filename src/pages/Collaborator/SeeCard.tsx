@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, CreditCard, Calendar, DollarSign, TrendingUp, AlertTriangle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "../../components/toast";
