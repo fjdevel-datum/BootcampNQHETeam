@@ -22,7 +22,7 @@ public class GlobalCorsFilter implements ContainerResponseFilter {
         
         // Agregar headers CORS SOLO SI NO EXISTEN (evitar duplicados)
         if (!headers.containsKey("Access-Control-Allow-Origin")) {
-            headers.add("Access-Control-Allow-Origin", "http://localhost:5173");
+            headers.add("Access-Control-Allow-Origin", "https://v657nslf-5173.use2.devtunnels.ms");
         }
         
         if (!headers.containsKey("Access-Control-Allow-Credentials")) {

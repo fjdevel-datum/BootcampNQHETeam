@@ -3,15 +3,19 @@ package com.easycheck.domain.service;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.sql.DataSource;
+
 
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.easycheck.application.dto.GastoDTO;
+import com.easycheck.application.dto.DetalleGastoDTO;
 import com.easycheck.domain.model.actividad;
 import com.easycheck.domain.model.factura;
 import com.easycheck.domain.model.gasto;
@@ -26,8 +30,20 @@ import com.easycheck.infrastructure.repository.monedaRepository;
 import com.easycheck.infrastructure.repository.tipoGastoRepository;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+
 import jakarta.transaction.Transactional;
 import jakarta.enterprise.context.ApplicationScoped;
+
+
+
+
+
+import java.sql.*;
+
+
+
+
+
 
 @ApplicationScoped 
 public class ServiceGastoImp implements IServiceGasto {
@@ -84,8 +100,8 @@ public class ServiceGastoImp implements IServiceGasto {
 
         Date fechagasto;
         try {
-            LocalDate localDate = LocalDate.parse(gasto.getFecha(),DateTimeFormatter.ofPattern("yyy-MM-dd"));
-            fechagasto = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
+            LocalDate localDate = LocalDate.parse(gasto.getFecha(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            fechagasto = Date.valueOf(localDate);
         } catch (Exception e) {
             throw new IllegalArgumentException("Formato de fecha de expiración incorrecto. Use el formato yyyy-MM-dd.");
         }
@@ -147,6 +163,8 @@ public class ServiceGastoImp implements IServiceGasto {
                 SIMBOLO_MONEDA
             FROM V_GASTOS_POR_EMPLEADO
             WHERE EMPLEADOID = :empleadoId
+            AND PRIMER_GASTO >= TO_DATE(:fechaInicio, 'YYYY-MM-DD')
+            AND ULTIMO_GASTO < TO_DATE(:fechaFin, 'YYYY-MM-DD')
             """)
             .setParameter("empleadoId", empleadoId)
             .getSingleResult();
@@ -201,111 +219,54 @@ public class ServiceGastoImp implements IServiceGasto {
     }
 
 
-    /*@Inject
-    EntityManager entityManager;
+    ///////////////////////////////////////////////////////////////////////////////
 
     @Inject
-    TarjetaRepository tarjetaRepository;
+    DataSource dataSource; // Inyectamos el pool de conexiones de Quarkus
 
-    private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-
-    @Transactional
-    public gasto saveGasto(GastoDTO dto) throws IllegalArgumentException {
-        validateDTO(dto);
-
-        Date fecha = parseDate(dto.getFecha());
-
-        // Buscar tarjeta y recurso asignado
-        tarjeta foundTarjeta = findTarjeta(dto.getNumero_Tarjeta());
-        recursoAsignado recurso = findRecursoAsignado(foundTarjeta);
-
-        // Construir y persistir el gasto
-        gasto g = new gasto();
-        g.setFecha(fecha);
-        g.setDescripcionGasto(dto.getDescripcion_Item() != null ? 
-            dto.getDescripcion_Item() : dto.getNombre_Pagador());
-        g.setTotalGasto(dto.getMonto_Total());
+    @Override
+    public List<DetalleGastoDTO> getDetalleGastos(Long empleadoId, LocalDate fechaInicio, LocalDate fechaFinal) {
         
-        // Establecer relaciones si existen los IDs
-        if (dto.getMonedaGastoId() != null) {
-            moneda monedaGasto = em.find(moneda.class, dto.getMonedaGastoId());
-            if (monedaGasto != null) {
-                g.setMonedaGasto(monedaGasto);
+        List<DetalleGastoDTO> gastos = new ArrayList<>();
+        
+        // Esta es la forma de llamar a una función de tabla en Oracle
+        String sql = "SELECT * FROM TABLE(C##EASYCHECK.F_DETALLE_GASTOS_EMPLEADO(?, ?, ?))";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            // Asignamos los parámetros
+            ps.setDate(1, Date.valueOf(fechaInicio));
+            ps.setDate(2, Date.valueOf(fechaFinal));
+            ps.setLong(3, empleadoId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                // Iteramos sobre los resultados y los mapeamos al DTO
+                while (rs.next()) {
+                    DetalleGastoDTO gasto = new DetalleGastoDTO(
+                        rs.getLong("EmpleadoId"),
+                        rs.getString("Nombre_Completo"),
+                        rs.getString("Rol"),
+                        rs.getString("NombreCentro"),
+                        rs.getString("EmpresaNombre"),
+                        rs.getString("NombreActividad"),
+                        rs.getString("DescripcionGasto"),
+                        rs.getBigDecimal("TotalGasto"),
+                        rs.getString("SimboloMoneda"),
+                        rs.getDate("FechaGasto").toLocalDate(),
+                        rs.getLong("RecursoId"),
+                        rs.getLong("TarjetaId"),
+                        rs.getString("NumeroTarjeta")
+                    );
+                    gastos.add(gasto);
+                }
             }
+        } catch (SQLException e) {
+            // En una app real, aquí deberías manejar mejor la excepción
+            throw new RuntimeException("Error al consultar la base de datos", e);
         }
-
-        if (dto.getFacturaId() != null) {
-            factura factura = em.find(factura.class, dto.getFacturaId());
-            if (factura != null) {
-                g.setFactura(factura);
-            }
-        }
-
-        if (dto.getTipoGastoId() != null) {
-            tipoGasto tipoGasto = em.find(tipoGasto.class, dto.getTipoGastoId());
-            if (tipoGasto != null) {
-                g.setTipoGasto(tipoGasto);
-            }
-        }
-
-        if (dto.getActividadId() != null) {
-            actividad actividad = em.find(actividad.class, dto.getActividadId());
-            if (actividad != null) {
-                g.setActividad(actividad);
-            }
-        }
-
-        // Establecer total en moneda base
-        g.setTotalMonedaBase(dto.getTotalMonedaBase() != null ? 
-            dto.getTotalMonedaBase() : dto.getMonto_Total());
-
-        if (recurso != null) {
-            g.setRecursoAsignado(recurso);
-        }
-
-        em.persist(g);
-        em.flush();
-
-        return g;
+        
+        return gastos;
     }
-
-    private void validateDTO(GastoDTO dto) {
-        if (dto == null) throw new IllegalArgumentException("payload vacío");
-        if (dto.getFecha() == null || dto.getFecha().trim().isEmpty())
-            throw new IllegalArgumentException("Fecha requerida (YYYY-MM-DD)");
-        if (dto.getMonto_Total() == null)
-            throw new IllegalArgumentException("Monto_Total requerido");
-    }
-
-    private Date parseDate(String dateStr) {
-        try {
-            return sdf.parse(dateStr);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Formato de fecha inválido, se espera YYYY-MM-DD");
-        }
-    }
-
-    private tarjeta findTarjeta(String numeroTarjeta) {
-        if (numeroTarjeta != null && !numeroTarjeta.trim().isEmpty()) {
-            return tarjetaRepository.find("numeroTarjeta", numeroTarjeta).firstResult();
-        }
-        return null;
-    }
-
-    private recursoAsignado findRecursoAsignado(tarjeta tarjeta) {
-        if (tarjeta != null) {
-            return recursoAsignadoRepository
-                .find("tarjeta.tarjetaId = ?1 and estado = ?2", 
-                    tarjeta.getTarjetaId(), "Activo")
-                .firstResult();
-        }
-        return null;
-    }*/
-
-
-
-
-
-
-
+    
 }
