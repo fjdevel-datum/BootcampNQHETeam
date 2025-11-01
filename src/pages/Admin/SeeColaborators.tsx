@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "lucide-react";
+import { toast } from "../../components/toast";
 import { fetchWithAuth, getCurrentUserData, logoutUser } from "../../services/authService";
 
 const apiurl = import.meta.env.VITE_API_URL;
+
 interface Colaborador {
   empleadoId: number;
   nombres: string;
@@ -23,16 +25,24 @@ const AdminSideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose }) => {
   const userData = getCurrentUserData();
 
   const handleLogout = async () => {
+    const loadingToast = toast.loading("Cerrando sesión...");
+    
     try {
       const result = await logoutUser();
+      
+      toast.dismiss(loadingToast);
+      
       if (result.success) {
-        console.log("Sesión cerrada exitosamente");
-        navigate("/login");
+        toast.success("Sesión cerrada", "Hasta pronto");
+        setTimeout(() => {
+          navigate("/login");
+        }, 1000);
       } else {
-        console.error("Error al cerrar sesión:", result.error);
+        toast.error("Error al cerrar sesión", result.error || "Inténtalo nuevamente");
       }
-    } catch (error) {
-      console.error("Error inesperado al cerrar sesión:", error);
+    } catch (error: any) {
+      toast.dismiss(loadingToast);
+      toast.error("Error inesperado", error.message || "No se pudo cerrar la sesión");
     }
     onClose();
   };
@@ -102,20 +112,19 @@ const SeeCollaborators: React.FC = () => {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const fetchColaboradores = async () => {
       try {
         setLoading(true);
-        setError(null);
 
         // Obtener datos del usuario actual
         const userData = getCurrentUserData();
 
         if (!userData || !userData.empresaId) {
-          setError("No se pudo identificar la empresa del usuario");
+          toast.error("Error de autenticación", "No se pudo identificar la empresa del usuario");
+          setLoading(false);
           return;
         }
 
@@ -128,9 +137,12 @@ const SeeCollaborators: React.FC = () => {
 
         console.log("Empleados obtenidos:", data);
         setColaboradores(data);
+        
+        if (data.length > 0) {
+        }
       } catch (err: any) {
         console.error("Error al cargar colaboradores:", err);
-        setError(err.message || "No se pudieron cargar los colaboradores");
+        toast.error("Error al cargar", err.message || "No se pudieron cargar los colaboradores");
       } finally {
         setLoading(false);
       }
@@ -170,28 +182,31 @@ const SeeCollaborators: React.FC = () => {
           className="w-full p-3 border border-gray-300 rounded-lg mb-6 focus:ring-2 focus:ring-button focus:border-button outline-none transition-all"
         />
 
-        {/* Estados de carga/error */}
+        {/* Estado de carga */}
         {loading && (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-button"></div>
           </div>
         )}
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-700 text-center">{error}</p>
-          </div>
-        )}
-
         {/* Lista de colaboradores */}
-        {!loading && !error && (
+        {!loading && (
           <>
             {filtrados.length === 0 ? (
               <div className="text-center py-12">
                 <User size={48} className="mx-auto text-gray-400 mb-3" />
                 <p className="text-gray-500 text-lg">
-                  {busqueda ? "No se encontraron colaboradores" : "No hay colaboradores registrados"}
+                  {busqueda 
+                    ? "No se encontraron colaboradores con ese nombre" 
+                    : colaboradores.length === 0 
+                      ? "No hay colaboradores registrados aún"
+                      : "No se encontraron colaboradores"}
                 </p>
+                {busqueda && (
+                  <p className="text-gray-400 text-sm mt-2">
+                    Intenta con otro término de búsqueda
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
@@ -199,8 +214,8 @@ const SeeCollaborators: React.FC = () => {
                   <button
                     key={colab.empleadoId}
                     onClick={() => navigate(`/admin/info-colaborators/${colab.empleadoId}`, {
-                    state: { fromSee: true }
-                  })}
+                      state: { fromSee: true }
+                    })}
                     className="bg-activity text-white flex items-center justify-between p-4 rounded-lg w-full hover:opacity-90 transition-opacity shadow-md"
                   >
                     <div className="flex items-center gap-3">
@@ -243,7 +258,7 @@ const SeeCollaborators: React.FC = () => {
         )}
 
         {/* Botón agregar colaborador */}
-        {!loading && !error && (
+        {!loading && (
           <button
             onClick={() => navigate("/admin/add-colaborator")}
             className="mt-8 w-full bg-button text-white font-semibold py-3 rounded-lg hover:bg-button-hover transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-md"

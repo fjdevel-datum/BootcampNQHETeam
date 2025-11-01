@@ -61,7 +61,7 @@ const SideMenu: React.FC<SideMenuProps> = ({ isOpen, onClose, currentPage, onNav
         </div>
         <nav className="mt-8 space-y-3 flex-1">
           <button 
-            onClick={() => navigateTo('/UserCards')}
+            onClick={() => navigateTo('/usercards')}
             className={`w-full text-left py-3 px-4 text-white font-semibold rounded-md font-montserrat transition-colors ${
               currentPage === 'cards' 
                 ? 'bg-red-800' 

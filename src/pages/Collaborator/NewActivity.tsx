@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "../../components/toast";
 import { fetchWithAuth, getCurrentUserData } from "../../services/authService";
 
 interface Activity {
@@ -15,6 +16,7 @@ interface Activity {
 const NewActivity: React.FC = () => {
   const navigate = useNavigate();
   const apiurl = import.meta.env.VITE_API_URL;
+  
   const [formData, setFormData] = useState<Activity>({
     nombre: "",
     fechaInicio: "",
@@ -24,14 +26,14 @@ const NewActivity: React.FC = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Obtener el empleadoId del usuario logueado
   useEffect(() => {
     const userData = getCurrentUserData();
     
     if (!userData || !userData.empleadoId) {
-      setError("No se pudo identificar al usuario");
+      toast.error("Error de autenticación", "No se pudo identificar al usuario");
+      setTimeout(() => navigate("/colaborators/activities"), 2000);
       return;
     }
 
@@ -41,37 +43,37 @@ const NewActivity: React.FC = () => {
     }));
 
     console.log("👤 Empleado ID cargado:", userData.empleadoId);
-  }, []);
+  }, [navigate]);
 
   const handleGoBack = () => navigate(-1);
 
   const handleGuardar = async () => {
     // Validaciones
     if (!formData.nombre || !formData.nombre.trim()) {
-      setError("Por favor ingrese el nombre de la actividad");
+      toast.error("Campo requerido", "Por favor ingrese el nombre de la actividad");
       return;
     }
 
     if (!formData.fechaInicio) {
-      setError("Por favor seleccione la fecha de inicio");
+      toast.error("Campo requerido", "Por favor seleccione la fecha de inicio");
       return;
     }
 
     if (formData.fechaFinal && formData.fechaFinal < formData.fechaInicio) {
-      setError("La fecha final no puede ser anterior a la fecha de inicio");
+      toast.error("Fecha inválida", "La fecha final no puede ser anterior a la fecha de inicio");
       return;
     }
 
     if (!formData.empleadoId) {
-      setError("No se pudo identificar al usuario. Por favor, inicie sesión nuevamente.");
+      toast.error("Error de sesión", "Por favor, inicie sesión nuevamente");
       return;
     }
 
     setLoading(true);
-    setError(null);
+    const loadingToast = toast.loading("Creando actividad...");
 
     try {
-      console.log(" Creando actividad con datos:", formData);
+      console.log("📝 Creando actividad con datos:", formData);
 
       // Llamar al endpoint con autenticación
       const data = await fetchWithAuth(
@@ -82,16 +84,25 @@ const NewActivity: React.FC = () => {
         }
       );
 
-      console.log(" Actividad creada exitosamente:", data);
+      console.log("✅ Actividad creada exitosamente:", data);
 
-      // Mostrar mensaje de éxito
-      alert(`Actividad "${data.nombre}" creada correctamente`);
+      toast.dismiss(loadingToast);
+      toast.success(
+        "Actividad creada",
+        `"${data.nombre}" se registró correctamente`
+      );
 
-      // Redirigir a la lista de actividades
-      navigate("/colaborators/activities");
+      setTimeout(() => {
+        navigate("/colaborators/activities");
+      }, 1500);
+
     } catch (error: any) {
-      console.error(" Error al crear actividad:", error);
-      setError(error.message || "No se pudo crear la actividad. Por favor, intente nuevamente.");
+      console.error("❌ Error al crear actividad:", error);
+      toast.dismiss(loadingToast);
+      toast.error(
+        "Error al crear", 
+        error.message || "No se pudo crear la actividad. Intente nuevamente"
+      );
     } finally {
       setLoading(false);
     }
@@ -102,8 +113,6 @@ const NewActivity: React.FC = () => {
       ...prev,
       [field]: value
     }));
-    // Limpiar error al escribir
-    if (error) setError(null);
   };
 
   return (
@@ -122,13 +131,6 @@ const NewActivity: React.FC = () => {
         <h1 className="text-2xl font-bold text-center mb-6 text-activity">
           Nueva Actividad
         </h1>
-
-        {/* Mensaje de error */}
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-700 text-center">{error}</p>
-          </div>
-        )}
 
         <div className="space-y-4">
           {/* Nombre */}
@@ -160,7 +162,7 @@ const NewActivity: React.FC = () => {
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-activity focus:border-activity outline-none transition-all"
               required
               disabled={loading}
-              min={new Date().toISOString().split('T')[0]} // No permitir fechas pasadas
+              min={new Date().toISOString().split('T')[0]}
             />
           </div>
 

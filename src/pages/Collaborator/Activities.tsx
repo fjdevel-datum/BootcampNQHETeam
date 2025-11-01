@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import SideMenu from "../../components/SideMenu"; 
 import { useNavigate } from "react-router-dom";
+import { toast } from "../../components/toast";
+import SideMenu from "../../components/SideMenu"; 
 import ActivityCard from "../../components/ActivityCard";
 import { fetchWithAuth, getCurrentUserData } from "../../services/authService";
 
@@ -17,11 +18,11 @@ const Activities: React.FC = () => {
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showSortOptions, setShowSortOptions] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  
   const apiurl = import.meta.env.VITE_API_URL;
-
   const navigate = useNavigate();
+  
   const toggleMenu = () => setMenuOpen((v) => !v);
 
   const handleNavigation = (path: string) => {
@@ -33,13 +34,12 @@ const Activities: React.FC = () => {
     const fetchActivities = async () => {
       try {
         setLoading(true);
-        setError(null);
 
         // Obtener datos del usuario actual
         const userData = getCurrentUserData();
         
         if (!userData || !userData.empleadoId) {
-          setError("No se pudo identificar al usuario");
+          toast.error("Error de autenticación", "No se pudo identificar al usuario");
           setLoading(false);
           return;
         }
@@ -51,31 +51,41 @@ const Activities: React.FC = () => {
           `${apiurl}/actividad/empleado/${userData.empleadoId}`
         );
 
-        console.log(" Actividades obtenidas:", data);
+        console.log("✅ Actividades obtenidas:", data);
 
         setActivities(data);
+        
+        if (data.length > 0) {
+          toast.success("Actividades cargadas", `${data.length} actividad${data.length !== 1 ? 'es' : ''} encontrada${data.length !== 1 ? 's' : ''}`);
+        } else {
+          toast.info("Sin actividades", "No tienes actividades registradas aún");
+        }
       } catch (err: any) {
-        console.error("Error al cargar actividades:", err);
-        setError(err.message || "No se pueden cargar las actividades");
+        console.error("❌ Error al cargar actividades:", err);
+        toast.error("Error al cargar", err.message || "No se pudieron cargar las actividades");
       } finally {
         setLoading(false);
       }
     };
 
     fetchActivities();
-  }, []);
+  }, [apiurl]);
 
   const filteredAndSortedActivities = activities
     .filter((act) =>
       act.nombre.toLowerCase().includes(search.toLowerCase())
     )
     .sort((a, b) => {
-      // Como no tienes fecha, ordenar por nombre o ID
       if (sortOrder === "asc") {
         return a.actividadId - b.actividadId;
       }
       return b.actividadId - a.actividadId;
     });
+
+  const handleGenerateReport = () => {
+    toast.info("Función en desarrollo", "La generación de reportes estará disponible próximamente");
+    console.log("Generar reporte - Función pendiente");
+  };
 
   return (
     <div className="min-h-screen bg-background font-montserrat relative">
@@ -109,13 +119,21 @@ const Activities: React.FC = () => {
               <div className="absolute top-10 right-0 bg-white border border-gray-300 rounded-md shadow-md z-10">
                 <button
                   className="block w-full px-4 py-2 hover:bg-gray-100 text-left"
-                  onClick={() => { setSortOrder("asc"); setShowSortOptions(false); }}
+                  onClick={() => { 
+                    setSortOrder("asc"); 
+                    setShowSortOptions(false);
+                    toast.info("Ordenadas por más antiguas");
+                  }}
                 >
                   Más Antiguas
                 </button>
                 <button
                   className="block w-full px-4 py-2 hover:bg-gray-100 text-left"
-                  onClick={() => { setSortOrder("desc"); setShowSortOptions(false); }}
+                  onClick={() => { 
+                    setSortOrder("desc"); 
+                    setShowSortOptions(false);
+                    toast.info("Ordenadas por más recientes");
+                  }}
                 >
                   Más Recientes
                 </button>
@@ -133,39 +151,54 @@ const Activities: React.FC = () => {
           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-button bg-white shadow-sm"
         />
 
-        {/* Estado de carga o error */}
+        {/* Estado de carga */}
         <div className="mt-6">
           {loading && (
             <div className="flex justify-center items-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-button"></div>
             </div>
           )}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-700">{error}</p>
-            </div>
-          )}
-          {!loading && !error && filteredAndSortedActivities.length === 0 && (
+          
+          {!loading && filteredAndSortedActivities.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-gray-500 text-lg">No hay actividades registradas</p>
+              <p className="text-gray-500 text-lg">
+                {search 
+                  ? "No se encontraron actividades con ese nombre" 
+                  : activities.length === 0
+                    ? "No hay actividades registradas"
+                    : "No se encontraron actividades"}
+              </p>
+              {search && (
+                <p className="text-gray-400 text-sm mt-2">
+                  Intenta con otro término de búsqueda
+                </p>
+              )}
             </div>
           )}
         </div>
 
         {/* Lista de actividades */}
         <div className="space-y-3 mt-4">
-          {!loading && !error && filteredAndSortedActivities.map((act) => (
+          {!loading && filteredAndSortedActivities.map((act) => (
             <ActivityCard
               key={act.actividadId}
               title={act.nombre}
-              date={act.estado} // Mostrar el estado como "fecha"
+              date={act.estado}
               onClick={() => navigate(`/colaborators/activities/${act.actividadId}/bills`)}
             />
           ))}
         </div>
 
+        {/* Contador de resultados */}
+        {!loading && filteredAndSortedActivities.length > 0 && (
+          <p className="text-gray-600 text-sm mt-4 text-center">
+            Mostrando {filteredAndSortedActivities.length} de {activities.length} actividad
+            {activities.length !== 1 ? "es" : ""}
+          </p>
+        )}
+
         {/* Botones grandes */}
-        {!loading && !error && (
+        {!loading && (
           <div className="flex flex-col space-y-3 mt-8">
             <button
               onClick={() => navigate("/colaborators/activities/new")}
@@ -176,7 +209,7 @@ const Activities: React.FC = () => {
 
             <button 
               className="w-full py-3 bg-button hover:bg-button-hover text-white font-bold rounded-md shadow transition-colors"
-              onClick={() => console.log("Generar reporte")}
+              onClick={handleGenerateReport}
             >
               Generar reporte
             </button>

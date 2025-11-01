@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { ArrowLeft, CreditCard } from "lucide-react";
+import { toast } from "../../components/toast";
 import Card from "../../components/Card";
 import { fetchWithAuth } from "../../services/authService";
-import { useLocation } from "react-router-dom";
-
-
 
 interface Recurso {
   tarjetaId: number;
@@ -24,26 +22,25 @@ interface Colaborador {
   empresaId: number;
 }
 
-
-
 const InfoColaborators: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
+  
   const [colaborador, setColaborador] = useState<Colaborador | null>(null);
   const [recursos, setRecursos] = useState<Recurso[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  
   const apiurl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null);
 
         if (!id) {
-          setError("ID de colaborador no válido");
+          toast.error("ID inválido", "No se proporcionó un ID de colaborador válido");
+          navigate("/admin/see-collaborators");
           return;
         }
 
@@ -56,17 +53,21 @@ const InfoColaborators: React.FC = () => {
         } catch (err: any) {
           if (err.message.includes("404") || err.message.includes("No se encontraron")) {
             setRecursos([]);
-          } else throw err;
+            toast.info("Sin recursos", "Este colaborador no tiene recursos asignados aún");
+          } else {
+            throw err;
+          }
         }
       } catch (err: any) {
-        setError(err.message || "No se pudo cargar la información del colaborador");
+        toast.error("Error al cargar", err.message || "No se pudo cargar la información del colaborador");
+        setTimeout(() => navigate("/admin/see-collaborators"), 2000);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [id]);
+  }, [id, apiurl, navigate]);
 
   const formatExpirationDate = (fecha: string | null): string => {
     if (!fecha) return "";
@@ -80,15 +81,15 @@ const InfoColaborators: React.FC = () => {
     }
   };
 
-const handleGoBack = () => {
-  // Si venimos desde SeeCollaborators, usar -1 para mantener historial
-  if (location.state?.fromSee) {
-    navigate(-1);
-  } else {
-    // fallback seguro
-    navigate("/admin/see-collaborators");
-  }
-};  const getTipoTarjeta = (tipoId: number | null): "VIATICO" | "CREDITO" | "CORPORATIVA" => {
+  const handleGoBack = () => {
+    if (location.state?.fromSee) {
+      navigate(-1);
+    } else {
+      navigate("/admin/see-collaborators");
+    }
+  };
+
+  const getTipoTarjeta = (tipoId: number | null): "VIATICO" | "CREDITO" | "CORPORATIVA" => {
     switch (tipoId) {
       case 1: return "VIATICO";
       case 2: return "CREDITO";
@@ -97,11 +98,10 @@ const handleGoBack = () => {
   };
 
   const handleCardClick = (tarjetaId: number) => {
-  navigate(`/admin/edit-card/${tarjetaId}/${colaborador?.empleadoId}`, {
-    state: { fromInfo: `/admin/info-colaborators/${colaborador?.empleadoId}` }
-  });
-};
-
+    navigate(`/admin/edit-card/${tarjetaId}/${colaborador?.empleadoId}`, {
+      state: { fromInfo: true }
+    });
+  };
 
   if (loading) {
     return (
@@ -112,7 +112,7 @@ const handleGoBack = () => {
     );
   }
 
-  if (error) {
+  if (!colaborador) {
     return (
       <div className="min-h-screen bg-background p-6">
         <button
@@ -122,17 +122,9 @@ const handleGoBack = () => {
           <ArrowLeft className="w-5 h-5" />
           Volver
         </button>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700 text-center">{error}</p>
+        <div className="bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-300">
+          <p className="text-gray-500">No se encontró el colaborador</p>
         </div>
-      </div>
-    );
-  }
-
-  if (!colaborador) {
-    return (
-      <div className="min-h-screen bg-background p-6">
-        <p className="text-gray-500 text-center">No se encontró el colaborador</p>
       </div>
     );
   }
@@ -208,7 +200,7 @@ const handleGoBack = () => {
                 />
                 <div className="mt-2 text-center">
                   <span className="text-xs text-gray-500 hover:text-button transition">
-                    Click para editar
+                    Click para ver detalles
                   </span>
                 </div>
               </div>

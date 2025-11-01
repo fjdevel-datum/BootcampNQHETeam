@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Camera, Paperclip, X, Check, RotateCcw, ArrowLeft } from "lucide-react";
+import { toast } from "../../components/toast";
 import BillCard from "../../components/BillCard";
 
 interface Expense {
@@ -63,9 +64,11 @@ const Bills: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0]);
+      const file = e.target.files[0];
+      const url = URL.createObjectURL(file);
       setCapturedPhoto(url);
       setShowApproval(true);
+      toast.success("Archivo cargado", "Revisa la imagen antes de aprobar");
     }
   };
 
@@ -76,9 +79,10 @@ const Bills: React.FC = () => {
       });
       setStream(mediaStream);
       if (videoRef.current) videoRef.current.srcObject = mediaStream;
+      toast.success("Cámara activada", "Posiciona el comprobante y toma la foto");
     } catch (err) {
       console.error(err);
-      alert("No se pudo acceder a la cámara.");
+      toast.error("Error de cámara", "No se pudo acceder a la cámara del dispositivo");
     }
   };
 
@@ -93,6 +97,7 @@ const Bills: React.FC = () => {
         setCapturedPhoto(canvasRef.current.toDataURL("image/jpeg", 0.8));
         setShowApproval(true);
         setShowCamera(false);
+        toast.success("Foto capturada", "Revisa la imagen antes de aprobar");
       }
     }
   };
@@ -104,17 +109,18 @@ const Bills: React.FC = () => {
     setShowCamera(false);
   };
 
-  // ✅ Solo frontend: aceptar foto sin OCR
   const handleApprove = () => {
-    alert("✅ Foto aprobada correctamente (frontend)");
-    navigate("/BillCheck");
+    toast.success("Foto aprobada", "Completa los datos del gasto");
+    navigate("/BillCheck", {
+      state: { photo: capturedPhoto }
+    });
     setCapturedPhoto(null);
     setShowApproval(false);
     closeCamera();
   };
 
-  // ✅ Rechazar foto
   const handleRetake = () => {
+    toast.info("Repitiendo foto", "Toma una nueva fotografía");
     setCapturedPhoto(null);
     setShowApproval(false);
     if (!/Mobi|Android/i.test(navigator.userAgent)) {
@@ -124,6 +130,7 @@ const Bills: React.FC = () => {
   };
 
   const handleCancel = () => {
+    toast.warning("Foto descartada", "La imagen no fue guardada");
     setCapturedPhoto(null);
     setShowApproval(false);
     closeCamera();
@@ -150,17 +157,23 @@ const Bills: React.FC = () => {
 
         {/* Lista de gastos */}
         <div className="space-y-3">
-          {expenses.length === 0 && (
-            <p className="text-gray-500">No hay gastos registrados.</p>
+          {expenses.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-500">No hay gastos registrados</p>
+              <p className="text-gray-400 text-sm mt-2">
+                Usa los botones de abajo para agregar un nuevo gasto
+              </p>
+            </div>
+          ) : (
+            expenses.map((exp) => (
+              <BillCard
+                key={exp.id}
+                title={exp.title}
+                date={exp.date}
+                amount={exp.amount}
+              />
+            ))
           )}
-          {expenses.map((exp) => (
-            <BillCard
-              key={exp.id}
-              title={exp.title}
-              date={exp.date}
-              amount={exp.amount}
-            />
-          ))}
         </div>
 
         {/* Botones flotantes */}
@@ -169,6 +182,7 @@ const Bills: React.FC = () => {
             <button
               onClick={handleAddPhoto}
               className="w-14 h-14 rounded-full bg-button hover:bg-button-hover flex items-center justify-center shadow-lg transition-colors"
+              title="Tomar foto"
             >
               <Camera className="text-white w-6 h-6" />
             </button>
@@ -176,6 +190,7 @@ const Bills: React.FC = () => {
             <button
               onClick={handleAddFile}
               className="w-14 h-14 rounded-full bg-button hover:bg-button-hover flex items-center justify-center shadow-lg transition-colors"
+              title="Adjuntar archivo"
             >
               <Paperclip className="text-white w-6 h-6" />
             </button>
@@ -248,7 +263,7 @@ const Bills: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={handleCancel}
-                  className="flex-1 py-3 bg-button hover:bg-button-hover text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
                 >
                   <X className="w-4 h-4" /> Cancelar
                 </button>
@@ -262,7 +277,7 @@ const Bills: React.FC = () => {
 
                 <button
                   onClick={handleApprove}
-                  className="flex-1 py-3 bg-button hover:bg-button-hover text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
                 >
                   <Check className="w-4 h-4" /> Aprobar
                 </button>

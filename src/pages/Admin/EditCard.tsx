@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { ArrowLeft, CreditCard, AlertCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, CreditCard, AlertCircle, Loader2, Calendar } from "lucide-react";
+import { toast } from "../../components/toast";
 import { fetchWithAuth } from "../../services/authService";
 
 interface TarjetaData {
@@ -9,6 +10,7 @@ interface TarjetaData {
   numeroTarjeta: string;
   fechaExpiracion: string | null;
   descripcion: string;
+  diaCorte?: number | null;
 }
 
 interface RecursoAsignadoData {
@@ -32,8 +34,6 @@ const EditCard: React.FC = () => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const [tarjetaData, setTarjetaData] = useState<TarjetaData | null>(null);
   const [recursoData, setRecursoData] = useState<RecursoAsignadoData | null>(null);
@@ -45,23 +45,24 @@ const EditCard: React.FC = () => {
     estado: "Activo"
   });
 
-  // Función para verificar si una fecha ya pasó
   const esFechaVencida = (fecha: string): boolean => {
     if (!fecha) return false;
     const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Resetear horas para comparar solo fechas
-    const fechaComparar = new Date(fecha + 'T00:00:00'); // Asegurar formato correcto
+    hoy.setHours(0, 0, 0, 0);
+    const fechaComparar = new Date(fecha + 'T00:00:00');
     return fechaComparar < hoy;
   };
+
+  const esTarjetaCredito = tarjetaData?.tipoId === 2;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null);
 
         if (!cardId || !empleadoId) {
-          setError("Parámetros inválidos");
+          toast.error("Parámetros inválidos", "No se pudo cargar la información");
+          navigate(`/admin/info-colaborators/${empleadoId}`);
           return;
         }
 
@@ -77,7 +78,6 @@ const EditCard: React.FC = () => {
           ? new Date(tarjeta.fechaExpiracion).toISOString().split("T")[0]
           : "";
 
-        // VALIDACIÓN AUTOMÁTICA: Si la fecha ya pasó, estado DEBE ser "Inactivo"
         const estadoInicial = esFechaVencida(fechaFormateada) 
           ? "Inactivo" 
           : (recurso.estado || "Activo");
@@ -89,7 +89,8 @@ const EditCard: React.FC = () => {
         });
 
       } catch (err: any) {
-        setError(err.message || "No se pudo cargar la información de la tarjeta");
+        toast.error("Error al cargar", err.message || "No se pudo cargar la información de la tarjeta");
+        navigate(`/admin/info-colaborators/${empleadoId}`);
       } finally {
         setLoading(false);
       }
@@ -104,20 +105,13 @@ const EditCard: React.FC = () => {
     setFormData(prev => {
       const newFormData = { ...prev, [name]: value };
 
-      // ⭐ REGLA PRINCIPAL: Si la fecha está vencida, FORZAR estado Inactivo
       if (name === "fechaExpiracion" && esFechaVencida(value)) {
         newFormData.estado = "Inactivo";
+        toast.warning("Fecha vencida", "La tarjeta se marcará como inactiva automáticamente");
       }
 
-      // ⭐ Si cambian la fecha de vencida a válida, permitir cambiar estado
-      if (name === "fechaExpiracion" && !esFechaVencida(value) && prev.estado === "Inactivo") {
-        // Mantener Inactivo pero ahora el usuario puede cambiarlo
-        // No hacemos nada automático aquí
-      }
-
-      // ⭐ Evitar que manualmente pongan Activo si la fecha está vencida
       if (name === "estado" && value === "Activo" && esFechaVencida(newFormData.fechaExpiracion)) {
-        // No permitir cambio, mantener Inactivo
+        toast.error("Acción no permitida", "No puede activar una tarjeta con fecha vencida");
         return prev;
       }
 
@@ -128,17 +122,16 @@ const EditCard: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
-    setSuccessMessage(null);
+
+    if (esFechaVencida(formData.fechaExpiracion) && formData.estado === "Activo") {
+      toast.error("Validación fallida", "No se puede activar una tarjeta con fecha de expiración vencida");
+      setSaving(false);
+      return;
+    }
+
+    const loadingToast = toast.loading("Guardando cambios...");
 
     try {
-      // ⭐ VALIDACIÓN FINAL: Verificar que fecha vencida = Inactivo
-      if (esFechaVencida(formData.fechaExpiracion) && formData.estado === "Activo") {
-        setError("No se puede activar una tarjeta con fecha de expiración vencida");
-        setSaving(false);
-        return;
-      }
-
       await fetchWithAuth(`${apiurl}/tarjeta/${cardId}/fecha-expiracion`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -154,29 +147,30 @@ const EditCard: React.FC = () => {
         })
       });
 
-      setSuccessMessage("✅ Tarjeta actualizada exitosamente");
+      toast.dismiss(loadingToast);
+      toast.success("Tarjeta actualizada", "Los cambios se guardaron correctamente");
 
       setTimeout(() => {
-  navigate(`/admin/info-colaborators/${empleadoId}`, {
-    state: { fromEdit: true }
-  });
-}, 1500);
-
+        navigate(`/admin/info-colaborators/${empleadoId}`, {
+          state: { fromEdit: true }
+        });
+      }, 1500);
 
     } catch (err: any) {
-      setError(err.message || "Error al actualizar la tarjeta");
+      toast.dismiss(loadingToast);
+      toast.error("Error al actualizar", err.message || "No se pudieron guardar los cambios");
     } finally {
       setSaving(false);
     }
   };
 
-const handleGoBack = () => {
-  if (location.state?.fromEdit) {
-    navigate(-1); // vuelve a InfoColaborators
-  } else {
-    navigate(`/admin/info-colaborators/${empleadoId}`);
-  }
-};
+  const handleGoBack = () => {
+    if (location.state?.fromEdit) {
+      navigate(-1);
+    } else {
+      navigate(`/admin/info-colaborators/${empleadoId}`);
+    }
+  };
 
   const getTipoTarjeta = (tipoId: number | null): string => {
     switch (tipoId) {
@@ -207,7 +201,7 @@ const handleGoBack = () => {
           Volver
         </button>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700 text-center">{error || "No se encontró la información de la tarjeta"}</p>
+          <p className="text-red-700 text-center">No se encontró la información de la tarjeta</p>
         </div>
       </div>
     );
@@ -231,48 +225,51 @@ const handleGoBack = () => {
         <h1 className="text-2xl font-bold text-black">Editar Tarjeta</h1>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4 flex items-center gap-2">
-          <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          <p className="text-green-700">{successMessage}</p>
-        </div>
-      )}
-
-      {/*  ALERTA DE TARJETA VENCIDA */}
       {fechaVencida && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 flex items-center gap-2">
           <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
           <div>
-            <p className="text-amber-800 font-semibold"> Tarjeta Expirada</p>
+            <p className="text-amber-800 font-semibold">⚠️ Tarjeta Expirada</p>
             <p className="text-amber-700 text-sm">Esta tarjeta ha expirado y se encuentra desactivada. No puede activarse con una fecha vencida.</p>
           </div>
         </div>
       )}
 
+      {/* BLOQUE INFORMACIÓN DE TARJETA */}
       <div className="bg-gray-50 rounded-2xl p-6 shadow-md mb-6 border border-gray-200">
         <h2 className="text-lg font-semibold text-black mb-4">Información de la Tarjeta</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Número de tarjeta */}
           <div>
             <p className="text-sm text-gray-500 mb-1">Número de Tarjeta</p>
             <p className="text-base font-medium text-gray-900">
               {tarjetaData.numeroTarjeta.replace(/(\d{4})/g, "$1 ").trim()}
             </p>
           </div>
+
+          {/* Tipo de tarjeta */}
           <div>
             <p className="text-sm text-gray-500 mb-1">Tipo</p>
             <p className="text-base font-medium text-gray-900">{getTipoTarjeta(tarjetaData.tipoId)}</p>
           </div>
+
+          {/* Día de corte solo si es tarjeta de crédito */}
+          {esTarjetaCredito && tarjetaData.diaCorte && (
+            <div>
+              <p className="text-sm text-gray-500 mb-1 flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                Día de Corte
+              </p>
+              <p className="text-base font-medium text-gray-900">
+                Día {tarjetaData.diaCorte} de cada mes
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Este valor no se puede modificar</p>
+            </div>
+          )}
+
+          {/* Descripción */}
           {tarjetaData.descripcion && (
-            <div className="md:col-span-2">
+            <div className={esTarjetaCredito && tarjetaData.diaCorte ? "" : "md:col-span-2"}>
               <p className="text-sm text-gray-500 mb-1">Descripción</p>
               <p className="text-base font-medium text-gray-900">{tarjetaData.descripcion}</p>
             </div>
@@ -280,9 +277,11 @@ const handleGoBack = () => {
         </div>
       </div>
 
+      {/* FORMULARIO DE EDICIÓN */}
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-md space-y-6">
         <h2 className="text-lg font-semibold text-black mb-4">Editar Información</h2>
 
+        {/* Fecha de expiración */}
         <div>
           <label htmlFor="fechaExpiracion" className="block text-sm font-semibold text-gray-700 mb-2">
             Fecha de Expiración {fechaVencida && <span className="text-red-500">⚠️ Vencida</span>}
@@ -305,6 +304,7 @@ const handleGoBack = () => {
           </p>
         </div>
 
+        {/* Monto máximo */}
         <div>
           <label htmlFor="montoMaximo" className="block text-sm font-semibold text-gray-700 mb-2">
             Monto Máximo
@@ -327,6 +327,7 @@ const handleGoBack = () => {
           <p className="text-xs text-gray-500 mt-1">Límite de gasto permitido para esta tarjeta</p>
         </div>
 
+        {/* Estado */}
         <div>
           <label htmlFor="estado" className="block text-sm font-semibold text-gray-700 mb-2">
             Estado {fechaVencida && <span className="text-red-500">(Bloqueado)</span>}
@@ -339,7 +340,7 @@ const handleGoBack = () => {
             className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-button focus:border-transparent transition ${
               fechaVencida ? 'bg-gray-100 cursor-not-allowed' : ''
             }`}
-            disabled={saving || fechaVencida} //  Bloqueado si fecha vencida
+            disabled={saving || fechaVencida}
           >
             <option value="Activo">Activo</option>
             <option value="Inactivo">Inactivo</option>
@@ -356,6 +357,7 @@ const handleGoBack = () => {
           )}
         </div>
 
+        {/* Botones */}
         <div className="space-y-3 pt-4">
           <button
             type="submit"

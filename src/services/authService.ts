@@ -17,7 +17,7 @@ import type {
 import type { UserRole } from '../types/user.types';
 
 const ALLOWED_DOMAINS = ['gmail.com'];
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const isCompanyEmail = (email: string): boolean => {
   const domain = email.split('@')[1]?.toLowerCase();
@@ -98,7 +98,7 @@ export const registerUser = async (data: RegisterData): Promise<AuthResponse> =>
       }
 
       const backendData = await backendResponse.json();
-      console.log('✅ Usuario registrado en backend:', backendData);
+      console.log(' Usuario registrado en backend:', backendData);
 
       return {
         success: true,
@@ -129,7 +129,7 @@ export const registerUser = async (data: RegisterData): Promise<AuthResponse> =>
  */
 export const loginUser = async (credentials: LoginCredentials): Promise<AuthResponse> => {
   try {
-    console.log('🔐 Iniciando sesión con Firebase...');
+    console.log(' Iniciando sesión con Firebase...');
     
     // 1. Autenticar con Firebase
     const userCredential = await signInWithEmailAndPassword(
@@ -138,13 +138,13 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
       credentials.password
     );
 
-    console.log('✅ Autenticación Firebase exitosa');
+    console.log(' Autenticación Firebase exitosa');
 
     // 2. Obtener token
     const token = await userCredential.user.getIdToken();
     
     // 3. Verificar token en backend y obtener datos completos del usuario
-    console.log('🔍 Verificando token en backend...');
+    console.log('Verificando token en backend...');
     
     const response = await fetch(`${API_URL}/auth/verify`, {
       method: 'POST',
@@ -161,8 +161,8 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
 
     const userData: UserData = await response.json();
     
-    console.log('✅ Datos del usuario obtenidos del backend:', userData);
-    console.log('👤 Rol del usuario:', userData.rol);
+    console.log(' Datos del usuario obtenidos del backend:', userData);
+    console.log(' Rol del usuario:', userData.rol);
 
     // 4. Guardar datos en localStorage
     localStorage.setItem('token', userData.token);
@@ -181,7 +181,7 @@ export const loginUser = async (credentials: LoginCredentials): Promise<AuthResp
       userData
     };
   } catch (error: any) {
-    console.error('❌ Error en login:', error);
+    console.error(' Error en login:', error);
     return {
       success: false,
       error: error.message,
@@ -198,7 +198,7 @@ export const logoutUser = async (): Promise<AuthResponse> => {
     await signOut(auth);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    console.log('✅ Sesión cerrada');
+    console.log('   Sesión cerrada');
     return { success: true };
   } catch (error: any) {
     return {
