@@ -6,15 +6,17 @@ public class tarjetaDTO {
     private String numeroTarjeta;
     private String fechaExpiracion;
     private String descripcion;
+    private Integer diaCorte;
 
     public tarjetaDTO() {}
 
-    public tarjetaDTO(Long tarjetaId, Long tipoId, String numeroTarjeta, String fechaExpiracion, String descripcion) {
+    public tarjetaDTO(Long tarjetaId, Long tipoId, String numeroTarjeta, String fechaExpiracion, String descripcion, Integer diaCorte) {
         this.tarjetaId = tarjetaId;
         this.tipoId = tipoId;
         this.numeroTarjeta = numeroTarjeta;
         this.fechaExpiracion = fechaExpiracion;
         this.descripcion = descripcion;
+        this.diaCorte = diaCorte;
     }
 
     public Long getTarjetaId() {
@@ -28,6 +30,14 @@ public class tarjetaDTO {
     }
     public void setTipoId(Long tipoId) {
         this.tipoId = tipoId;
+    }
+
+    public Integer getDiaCorte() {
+        return diaCorte;
+    }
+
+    public void setDiaCorte(Integer diaCorte) {
+        this.diaCorte = diaCorte;
     }
 
     public String getNumeroTarjeta() {

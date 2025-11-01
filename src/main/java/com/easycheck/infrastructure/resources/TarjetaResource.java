@@ -59,7 +59,8 @@ public class TarjetaResource {
                             t.getTipoTarjeta() != null ? t.getTipoTarjeta().getTipoId() : null,
                             t.getNumeroTarjeta(),
                             t.getFechaExpiracion() != null ? t.getFechaExpiracion().toString() : null,
-                            t.getDescripcion()))
+                            t.getDescripcion(),
+                            t.getDiaCorte()))
                     .collect(Collectors.toList());
             
             return Response.ok(dtos).build();
@@ -91,7 +92,8 @@ public class TarjetaResource {
                     tarjeta.getTipoTarjeta() != null ? tarjeta.getTipoTarjeta().getTipoId() : null,
                     tarjeta.getNumeroTarjeta(),
                     tarjeta.getFechaExpiracion() != null ? tarjeta.getFechaExpiracion().toString() : null,
-                    tarjeta.getDescripcion()
+                    tarjeta.getDescripcion(),
+                    tarjeta.getDiaCorte()
             );
 
             return Response.ok(dto).build();
@@ -116,7 +118,8 @@ public class TarjetaResource {
                             t.getTipoTarjeta() != null ? t.getTipoTarjeta().getTipoId() : null,
                             t.getNumeroTarjeta(),
                             t.getFechaExpiracion() != null ? t.getFechaExpiracion().toString() : null,
-                            t.getDescripcion()
+                            t.getDescripcion(),
+                            t.getDiaCorte()
                     ))
                     .collect(Collectors.toList());
 

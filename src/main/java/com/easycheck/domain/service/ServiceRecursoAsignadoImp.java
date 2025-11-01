@@ -35,9 +35,9 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
     @Override
     @Transactional
     public RecursoAsignadoDTO crearRecursoAsignado(RecursoAsignadoDTO dto) throws IllegalArgumentException {
-        
+
         System.out.println("Creando recurso asignado...");
-        
+
         // Validaciones
         if (dto.getTarjetaId() == null) {
             throw new IllegalArgumentException("El ID de la tarjeta es requerido");
@@ -61,9 +61,9 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
 
         // Verificar que no exista ya una asignación activa de esta tarjeta al empleado
         List<recursoAsignado> asignacionesExistentes = recursoAsignadoRepository
-            .find("tarjeta.tarjetaId = ?1 and empleado.empleadoId = ?2 and estado = ?3", 
-                  dto.getTarjetaId(), dto.getEmpleadoId(), "Activo")
-            .list();
+                .find("tarjeta.tarjetaId = ?1 and empleado.empleadoId = ?2 and estado = ?3",
+                        dto.getTarjetaId(), dto.getEmpleadoId(), "Activo")
+                .list();
 
         if (!asignacionesExistentes.isEmpty()) {
             throw new IllegalArgumentException("Esta tarjeta ya está asignada activamente a este empleado");
@@ -106,7 +106,7 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
 
     @Override
     public List<RecursoAsignadoDTO> obtenerRecursosPorEmpleado(Long empleadoId) throws IllegalArgumentException {
-        
+
         if (empleadoId == null) {
             throw new IllegalArgumentException("El ID del empleado no puede ser nulo");
         }
@@ -121,20 +121,20 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
 
         // Obtener recursos del empleado
         List<recursoAsignado> recursos = recursoAsignadoRepository
-            .find("empleado.empleadoId", empleadoId)
-            .list();
+                .find("empleado.empleadoId", empleadoId)
+                .list();
 
         System.out.println("Recursos encontrados: " + recursos.size());
 
         // Mapear a DTO
         return recursos.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
     public RecursoAsignadoDTO obtenerRecursoPorId(Long recursoId) throws IllegalArgumentException {
-        
+
         if (recursoId == null) {
             throw new IllegalArgumentException("El ID del recurso no puede ser nulo");
         }
@@ -149,22 +149,22 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
 
     @Override
     public List<RecursoAsignadoDTO> listarTodosLosRecursos() {
-        
+
         System.out.println("Listando todos los recursos asignados");
-        
+
         List<recursoAsignado> recursos = recursoAsignadoRepository.listAll();
-        
+
         System.out.println("Total de recursos: " + recursos.size());
-        
+
         return recursos.stream()
-            .map(this::mapToDTO)
-            .collect(Collectors.toList());
+                .map(this::mapToDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public void desactivarRecurso(Long recursoId) throws IllegalArgumentException {
-        
+
         if (recursoId == null) {
             throw new IllegalArgumentException("El ID del recurso no puede ser nulo");
         }
@@ -177,7 +177,7 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
         System.out.println("Desactivando recurso ID: " + recursoId);
 
         recurso.setEstado("Inactivo");
-        
+
         try {
             recursoAsignadoRepository.persist(recurso);
             System.out.println("Recurso desactivado");
@@ -189,10 +189,11 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
 
     @Override
     @Transactional
-    public RecursoAsignadoDTO actualizarRecursoAsignado(Long recursoId, Double montoMaximo, String estado) throws IllegalArgumentException {
-        
+    public RecursoAsignadoDTO actualizarRecursoAsignado(Long recursoId, Double montoMaximo, String estado)
+            throws IllegalArgumentException {
+
         System.out.println("Actualizando recurso asignado ID: " + recursoId);
-        
+
         if (recursoId == null) {
             throw new IllegalArgumentException("El ID del recurso no puede ser nulo");
         }
@@ -235,22 +236,23 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
     }
 
     @Override
-    public RecursoAsignadoDTO obtenerRecursoPorTarjetaYEmpleado(Long tarjetaId, Long empleadoId) throws IllegalArgumentException {
-        
+    public RecursoAsignadoDTO obtenerRecursoPorTarjetaYEmpleado(Long tarjetaId, Long empleadoId)
+            throws IllegalArgumentException {
+
         System.out.println("Buscando recurso para tarjeta: " + tarjetaId + " y empleado: " + empleadoId);
-        
+
         if (tarjetaId == null) {
             throw new IllegalArgumentException("El ID de la tarjeta no puede ser nulo");
         }
-        
+
         if (empleadoId == null) {
             throw new IllegalArgumentException("El ID del empleado no puede ser nulo");
         }
 
         // Buscar recurso asignado para esta tarjeta y empleado
         List<recursoAsignado> recursos = recursoAsignadoRepository
-            .find("tarjeta.tarjetaId = ?1 and empleado.empleadoId = ?2", tarjetaId, empleadoId)
-            .list();
+                .find("tarjeta.tarjetaId = ?1 and empleado.empleadoId = ?2", tarjetaId, empleadoId)
+                .list();
 
         if (recursos.isEmpty()) {
             throw new IllegalArgumentException("No se encontró asignación de tarjeta para este empleado");
@@ -258,9 +260,9 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
 
         // Si hay múltiples asignaciones, priorizar la activa, sino la más reciente
         recursoAsignado recurso = recursos.stream()
-            .filter(r -> "Activo".equals(r.getEstado()))
-            .findFirst()
-            .orElse(recursos.get(0));
+                .filter(r -> "Activo".equals(r.getEstado()))
+                .findFirst()
+                .orElse(recursos.get(0));
 
         System.out.println("Recurso encontrado con ID: " + recurso.getRecursoId());
 
@@ -272,28 +274,59 @@ public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
      */
     private RecursoAsignadoDTO mapToDTO(recursoAsignado recurso) {
         return new RecursoAsignadoDTO(
-            recurso.getRecursoId(),
-            recurso.getEmpleado() != null ? recurso.getEmpleado().getEmpleadoId() : null,
-            recurso.getTarjeta() != null ? recurso.getTarjeta().getTarjetaId() : null,
-            recurso.getFechaAsignacion() != null ? 
-                new SimpleDateFormat("yyyy-MM-dd").format(recurso.getFechaAsignacion()) : null,
-            recurso.getMontoMaximo(),
-            recurso.getEstado()
-        );
-    
+                recurso.getRecursoId(),
+                recurso.getEmpleado() != null ? recurso.getEmpleado().getEmpleadoId() : null,
+                recurso.getTarjeta() != null ? recurso.getTarjeta().getTarjetaId() : null,
+                recurso.getFechaAsignacion() != null
+                        ? new SimpleDateFormat("yyyy-MM-dd").format(recurso.getFechaAsignacion())
+                        : null,
+                recurso.getMontoMaximo(),
+                recurso.getEstado());
+
     }
 
     /////////////////////////////////////////////////////////
     /// Informacion de Recursos por empleado
     /////////////////////////////////////////////////////////
 
-     @Inject
+@Inject
 EntityManager em;
 
 public InformacionRecursoDTO obtenerInformacionPorEmpleadoYTarjeta(Long empleadoId, Long tarjetaId)
     throws IllegalArgumentException {
 
     Object[] result = (Object[]) em.createNativeQuery("""
+        WITH RangoFechas AS (
+            SELECT 
+                t.tarjetaid,
+                t.diacorte,
+                tt.tipo,
+                -- Calcular fecha inicio del período de corte
+                CASE 
+                    WHEN tt.tipo = 'Tarjeta de Crédito' THEN
+                        CASE 
+                            WHEN EXTRACT(DAY FROM SYSDATE) < t.diacorte THEN
+                                ADD_MONTHS(TRUNC(SYSDATE, 'MM'), -1) + (t.diacorte - 1)
+                            ELSE
+                                TRUNC(SYSDATE, 'MM') + (t.diacorte - 1)
+                        END
+                    ELSE NULL
+                END AS fecha_inicio,
+                -- Calcular fecha fin del período de corte
+                CASE 
+                    WHEN tt.tipo = 'Tarjeta de Crédito' THEN
+                        CASE 
+                            WHEN EXTRACT(DAY FROM SYSDATE) < t.diacorte THEN
+                                TRUNC(SYSDATE, 'MM') + (t.diacorte - 1)
+                            ELSE
+                                ADD_MONTHS(TRUNC(SYSDATE, 'MM'), 1) + (t.diacorte - 1)
+                        END
+                    ELSE NULL
+                END AS fecha_fin
+            FROM tarjeta t
+            JOIN tipotarjeta tt ON t.tipoid = tt.tipoid
+            WHERE t.tarjetaid = :tarjetaId
+        )
         SELECT 
             e.empleadoid,
             e.nombres || ' ' || e.apellidos AS nombreEmpleado,
@@ -303,15 +336,25 @@ public InformacionRecursoDTO obtenerInformacionPorEmpleadoYTarjeta(Long empleado
             r.montomaximo,
             NVL(SUM(g.totalmonedabase), 0) AS totalGastado,
             ROUND((NVL(SUM(g.totalmonedabase), 0) / r.montomaximo) * 100, 2) AS porcentaje,
-            (r.montomaximo - NVL(SUM(g.totalmonedabase), 0)) AS resto
+            (r.montomaximo - NVL(SUM(g.totalmonedabase), 0)) AS resto,
+            t.diacorte,
+            TO_CHAR(t.fechaexpiracion, 'YYYY-MM-DD') AS fechaExpiracion,
+            tt.tipo AS tipoTarjeta
         FROM recursoasignado r
         JOIN empleado e ON r.empleadoid = e.empleadoid
         JOIN tarjeta t ON t.tarjetaid = r.tarjetaid
+        JOIN tipotarjeta tt ON t.tipoid = tt.tipoid
+        CROSS JOIN RangoFechas rf
         LEFT JOIN gasto g ON g.recursoid = r.recursoid
+            AND (
+                rf.fecha_inicio IS NULL
+                OR g.fecha BETWEEN rf.fecha_inicio AND rf.fecha_fin
+            )
         WHERE r.empleadoid = :empleadoId AND r.tarjetaid = :tarjetaId
         GROUP BY 
             e.empleadoid, e.nombres, e.apellidos, 
-            t.numerotarjeta, r.fechaasignacion, r.estado, r.montomaximo
+            t.numerotarjeta, r.fechaasignacion, r.estado, r.montomaximo,
+            t.diacorte, t.fechaexpiracion, tt.tipo
     """)
     .setParameter("empleadoId", empleadoId)
     .setParameter("tarjetaId", tarjetaId)
@@ -326,6 +369,9 @@ public InformacionRecursoDTO obtenerInformacionPorEmpleadoYTarjeta(Long empleado
     Double totalGastado = ((Number) result[6]).doubleValue();
     Double porcentaje = ((Number) result[7]).doubleValue();
     Double resto = ((Number) result[8]).doubleValue();
+    Integer diaCorte = result[9] != null ? ((Number) result[9]).intValue() : null;
+    String fechaExpiracion = (String) result[10];
+    String tipoTarjeta = (String) result[11];
     Double montoActual = resto;
     
     return new InformacionRecursoDTO(
@@ -337,7 +383,10 @@ public InformacionRecursoDTO obtenerInformacionPorEmpleadoYTarjeta(Long empleado
         montoMaximo,
         montoActual,
         porcentaje,
-        resto
+        resto,
+        diaCorte,
+        fechaExpiracion,
+        tipoTarjeta
     );
 }
 }

@@ -70,6 +70,7 @@ public class ServiceTarjetaImp implements IServiceTarjeta {
         nuevaTarjeta.setNumeroTarjeta(dto.getNumeroTarjeta());
         nuevaTarjeta.setFechaExpiracion(fechaExpiracion);
         nuevaTarjeta.setDescripcion(dto.getDescripcion());
+        nuevaTarjeta.setDiaCorte(dto.getDiaCorte());
 
         try {
             tarjetaRepository.persist(nuevaTarjeta);
@@ -193,7 +194,8 @@ public class ServiceTarjetaImp implements IServiceTarjeta {
             tarjeta.getNumeroTarjeta(),
             tarjeta.getFechaExpiracion() != null ? 
                 new SimpleDateFormat("yyyy-MM-dd").format(tarjeta.getFechaExpiracion()) : null,
-            tarjeta.getDescripcion()
+            tarjeta.getDescripcion(),
+            tarjeta.getDiaCorte()
         );
     }
 

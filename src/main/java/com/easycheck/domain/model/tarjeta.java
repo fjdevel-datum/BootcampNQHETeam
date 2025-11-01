@@ -29,17 +29,21 @@ public class tarjeta implements Serializable {
     @Column(name = "Descripcion")
     private String descripcion;
 
+    @Column(name = "DiaCorte")
+    private Integer diaCorte;
+
     @OneToMany(mappedBy = "tarjeta")
     private List<recursoAsignado> recursosAsignados;
 
     public tarjeta() {
     }
-    public tarjeta(Long tarjetaId, tipoTarjeta tipoTarjeta, String numeroTarjeta, Date fechaExpiracion, String descripcion) {
+    public tarjeta(Long tarjetaId, tipoTarjeta tipoTarjeta, String numeroTarjeta, Date fechaExpiracion, String descripcion, Integer diaCorte) {
         this.tarjetaId = tarjetaId;
         this.tipoTarjeta = tipoTarjeta;
         this.numeroTarjeta = numeroTarjeta;
         this.fechaExpiracion = fechaExpiracion;
         this.descripcion = descripcion;
+        this.diaCorte = diaCorte; 
     }
     public Long getTarjetaId() {
         return tarjetaId;
@@ -70,6 +74,12 @@ public class tarjeta implements Serializable {
     }
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+    public Integer getDiaCorte() {
+        return diaCorte;
+    }   
+    public void setDiaCorte(Integer diaCorte) {
+        this.diaCorte = diaCorte;
     }
     public List<recursoAsignado> getRecursosAsignados() {
         return recursosAsignados;
