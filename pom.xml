@@ -92,11 +92,18 @@
 
 
             <!-- Core: Jakarta Contexts and Dependency Injection (CDI) -->
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId> <!-- Usar la versión compatible con tu JDK/Framework -->
-            <scope>test</scope>
-        </dependency>
+            <dependency>
+                <groupId>io.rest-assured</groupId>
+                <artifactId>rest-assured</artifactId> <!-- Usar la versión compatible con tu JDK/Framework -->
+                <scope>test</scope>
+            </dependency>
+
+            <!-- Dependencias de hamcrest -->
+            <dependency>
+                <groupId>org.hamcrest</groupId>
+                <artifactId>hamcrest</artifactId>
+                <scope>test</scope>
+            </dependency>
         
         <!-- Core: MicroProfile Config (para @ConfigProperty) -->
         <dependency>

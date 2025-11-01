@@ -50,4 +50,21 @@ nb-configuration.xml
 .credentials
 ./tokens
 
+# Docker
+.env
+.env.local
+docker-compose.override.yml
+
+# Firebase Credentials (NUNCA subir a Git)
+serviceAccountKey.json
+tokens/StoredCredential
+tokens/*.json
+
+# Logs
+*.log
+logs/
+
 src/main/java/com/easycheck/infrastructure/resources/credentials/firebaseService.json
+
+# Environment variables
+.env
