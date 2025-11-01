@@ -45,6 +45,7 @@ public class GastoResource {
 
     /////////////////////////////////////////////
     /// 
+    /// http://localhost:8080/gastos/reporte/excel?empleadoId={}&fechaInicio=2025-10-01&fechaFinal=2025-10-31
     @GET
     @Path("/reporte/excel")
     // Producimos un tipo de dato que el navegador entiende como un archivo Excel
