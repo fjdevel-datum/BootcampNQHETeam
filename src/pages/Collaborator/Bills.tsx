@@ -29,7 +29,7 @@ const Bills: React.FC = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
-  const apiurl = import.meta.env.VITE_API_URL;
+  //const apiurl = import.meta.env.VITE_API_URL;
 
   // gastos de prueba
   useEffect(() => {
