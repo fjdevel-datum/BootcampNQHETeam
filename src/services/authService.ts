@@ -358,6 +358,35 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
 };
 
 /**
+ * Fetch especial para uploads de archivos (multipart/form-data)
+ * NO establece Content-Type para que el navegador lo haga automáticamente
+ */
+export const fetchWithAuthMultipart = async (
+  url: string,
+  formData: FormData
+): Promise<Response> => {
+  const token = localStorage.getItem('token'); // o getIdToken() si usas Firebase
+  
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: headers, // Solo Authorization, SIN Content-Type
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText}`);
+  }
+
+  return response;
+};
+
+/**
  * Refrescar token de autenticación
  */
 export const refreshToken = async (): Promise<string | null> => {

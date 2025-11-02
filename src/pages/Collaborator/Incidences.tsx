@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { AlertTriangle, FileText, TrendingUp } from "lucide-react";
+import { AlertTriangle, FileText } from "lucide-react";
 import { toast } from "../../components/toast";
 import SideMenu from "../../components/SideMenu";
 
