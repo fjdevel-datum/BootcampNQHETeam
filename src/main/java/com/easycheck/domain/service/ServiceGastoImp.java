@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.text.SimpleDateFormat;
 
 import javax.sql.DataSource;
 
@@ -146,12 +147,13 @@ public GastoDTO crearGasto(GastoDTO gasto) throws IllegalArgumentException
 
     @Override
 public List<GastoDTO> obtenerGastosPorActividad(Long actividadId) {
-    java.util.List<gasto> gastos = gastoRepository.findByActividadId(actividadId);
+    List<gasto> gastos = gastoRepository.findByActividadId(actividadId);
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
     
     return gastos.stream()
         .map(g -> new GastoDTO(
             g.getGastoId(),
-            g.getFecha() != null ? g.getFecha().toString() : null,
+            g.getFecha() != null ? sdf.format(g.getFecha()) : null,
             g.getMonedaGasto() != null ? g.getMonedaGasto().getMonedaId() : null,
             g.getFactura() != null ? g.getFactura().getFacturaId() : null,
             g.getRecursoAsignado() != null ? g.getRecursoAsignado().getRecursoId() : null,
