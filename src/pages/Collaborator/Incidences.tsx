@@ -55,38 +55,6 @@ const Incidences: React.FC = () => {
       </header>
 
       <main className="px-4 py-8 md:px-8 max-w-4xl mx-auto">
-        {/* Estadísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-xl p-4 shadow-md border-l-4 border-red-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Total Reportadas</p>
-                <p className="text-2xl font-bold text-gray-900">{totalIncidences}</p>
-              </div>
-              <AlertTriangle className="w-8 h-8 text-red-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 shadow-md border-l-4 border-yellow-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">En Revisión</p>
-                <p className="text-2xl font-bold text-gray-900">{totalIncidences}</p>
-              </div>
-              <TrendingUp className="w-8 h-8 text-yellow-500" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 shadow-md border-l-4 border-green-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Resueltas</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
-              </div>
-              <FileText className="w-8 h-8 text-green-500" />
-            </div>
-          </div>
-        </div>
 
         {/* Botones de acción principales */}
         <div className="space-y-4">
@@ -124,7 +92,7 @@ const Incidences: React.FC = () => {
               className="w-full bg-button hover:bg-button-hover text-white font-bold py-3 rounded-lg shadow-md transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
             >
               <FileText className="w-5 h-5" />
-              Ver Historial ({totalIncidences})
+              Ver Historial
             </button>
           </div>
         </div>

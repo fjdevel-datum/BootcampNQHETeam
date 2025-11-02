@@ -16,6 +16,7 @@ import InfoColaborators from "./pages/Admin/InfoColaborators";
 import SeeCollaborators from "./pages/Admin/SeeColaborators";
 import EditCard from "./pages/Admin/EditCard";
 import AddColaborator from "./pages/Admin/AddColaborator";
+import SeeIncidences from "./pages/Admin/SeeIncidences";
 
 // ========== PÁGINAS DE COLABORADOR (EMPLEADO) ==========
 import Activities from "./pages/Collaborator/Activities";
@@ -121,6 +122,14 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute allowedRoles={["ADMIN"]}>
                       <AddColaborator />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/see-incidences"
+                  element={
+                    <ProtectedRoute allowedRoles={["ADMIN"]}>
+                      <SeeIncidences />
                     </ProtectedRoute>
                   }
                 />
