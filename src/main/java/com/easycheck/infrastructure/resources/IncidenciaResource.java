@@ -59,16 +59,16 @@ public class IncidenciaResource {
     @Path("/empleado/{empleadoId}")
     public Response listarPorEmpleado(@PathParam("empleadoId") Long empleadoId) {
         try {
-            System.out.println("✅ GET /incidencia/empleado/" + empleadoId);
+            System.out.println("GET /incidencia/empleado/" + empleadoId);
             
             List<IncidenciaDetalleDTO> incidencias = serviceIncidencia.listarPorEmpleado(empleadoId);
             
-            System.out.println("✅ Incidencias encontradas: " + incidencias.size());
+            System.out.println("Incidencias encontradas: " + incidencias.size());
             
             return Response.ok(incidencias).build();
             
         } catch (Exception e) {
-            System.err.println("❌ Error al listar incidencias: " + e.getMessage());
+            System.err.println("Error al listar incidencias: " + e.getMessage());
             e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Error interno: " + e.getMessage())
@@ -80,7 +80,7 @@ public class IncidenciaResource {
     @Path("/empresa/{empresaId}")
     public Response listarPorEmpresa(@PathParam("empresaId") Long empresaId) {
         try {
-            System.out.println("✅ GET /incidencia/empresa/" + empresaId);
+            System.out.println("GET /incidencia/empresa/" + empresaId);
             
             if (empresaId == null) {
                 return Response.status(Response.Status.BAD_REQUEST)
@@ -90,17 +90,17 @@ public class IncidenciaResource {
             
             List<IncidenciaDetalleDTO> incidencias = serviceIncidencia.listarPorEmpresa(empresaId);
             
-            System.out.println("✅ Incidencias encontradas para la empresa: " + incidencias.size());
+            System.out.println("Incidencias encontradas para la empresa: " + incidencias.size());
             
             return Response.ok(incidencias).build();
             
         } catch (IllegalArgumentException e) {
-            System.err.println("❌ Error de validación: " + e.getMessage());
+            System.err.println("Error de validación: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(e.getMessage())
                 .build();
         } catch (Exception e) {
-            System.err.println("❌ Error al listar incidencias por empresa: " + e.getMessage());
+            System.err.println("Error al listar incidencias por empresa: " + e.getMessage());
             e.printStackTrace();
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                 .entity("Error interno: " + e.getMessage())

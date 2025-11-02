@@ -66,77 +66,103 @@ public class ServiceGastoImp implements IServiceGasto {
     @Inject
     GastoRepository gastoRepository;
 
+@Override
+@Transactional
+public GastoDTO crearGasto(GastoDTO gasto) throws IllegalArgumentException
+{
+    // Validar moneda
+    moneda moneda = monedaRepository.findById(gasto.getMonedaGasto());
+    if(moneda == null)
+    {
+        throw new IllegalArgumentException("Moneda no encontrada");
+    }
+    
+    // ✅ FACTURA ES OPCIONAL
+    factura factura = null;
+    if(gasto.getFacturaId() != null) {
+        factura = facturaRepository.findById(gasto.getFacturaId());
+        if(factura == null)
+        {
+            throw new IllegalArgumentException("Factura no encontrada con ID: " + gasto.getFacturaId());
+        }
+    }
+    
+    // Validar recurso
+    recursoAsignado recurso = recursoAsignadoRepository.findById(gasto.getRecursoId());
+    if(recurso == null)
+    {
+        throw new IllegalArgumentException("Recurso no encontrado");
+    }
+    
+    // Validar tipo de gasto
+    tipoGasto tipoGasto = tipoGastoRepository.findById(gasto.getTipoGastoId());
+    if(tipoGasto == null)
+    {
+        throw new IllegalArgumentException("Tipo de gasto no encontrado");
+    }
+    
+    // Validar actividad
+    actividad actividad = actividadRepository.findById(gasto.getActividadId());
+    if(actividad == null)
+    {
+        throw new IllegalArgumentException("Actividad no encontrada");
+    }
+
+    Date fechagasto;
+    try {
+        LocalDate localDate = LocalDate.parse(gasto.getFecha(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        fechagasto = Date.valueOf(localDate);
+    } catch (Exception e) {
+        throw new IllegalArgumentException("Formato de fecha incorrecto. Use el formato yyyy-MM-dd.");
+    }
+
+    gasto nuevoGasto = new gasto();
+    nuevoGasto.setFecha(fechagasto);
+    nuevoGasto.setMonedaGasto(moneda);
+    nuevoGasto.setFactura(factura); // Puede ser null
+    nuevoGasto.setRecursoAsignado(recurso);
+    nuevoGasto.setTipoGasto(tipoGasto);
+    nuevoGasto.setActividad(actividad);
+    nuevoGasto.setDescripcionGasto(gasto.getDescripcionGasto());
+    nuevoGasto.setTotalGasto(gasto.getTotalGasto());
+    nuevoGasto.setTotalMonedaBase(gasto.getTotalMonedaBase());
+
+    gastoRepository.persist(nuevoGasto);
+
+    GastoDTO gastoDTO = new GastoDTO(
+        nuevoGasto.getGastoId(),
+        gasto.getFecha(),
+        moneda.getMonedaId(),
+        factura != null ? factura.getFacturaId() : null,
+        recurso.getRecursoId(),
+        tipoGasto.getTipoGastoId(),
+        actividad.getActividadId(),
+        nuevoGasto.getDescripcionGasto(),
+        nuevoGasto.getTotalGasto(),
+        nuevoGasto.getTotalMonedaBase()
+    );
+    return gastoDTO;
+}
 
     @Override
-    @Transactional
-    public GastoDTO crearGasto(GastoDTO gasto)throws IllegalArgumentException
-    {
-        //validamos
-        moneda moneda = monedaRepository.findById(gasto.getMonedaGasto());
-        if(moneda==null)
-        {
-            throw new IllegalArgumentException("Moneda no encontrada");
-        }
-        factura factura = facturaRepository.findById(gasto.getFacturaId());
-        if(factura==null)
-        {
-            throw new IllegalArgumentException("Factura no encontrada");
-        }
-        recursoAsignado recurso = recursoAsignadoRepository.findById(gasto.getRecursoId());
-        if(recurso==null)
-        {
-            throw new IllegalArgumentException("Recurso no encontrado");
-        }
-        tipoGasto tipoGasto = tipoGastoRepository.findById(gasto.getTipoGastoId());
-        if(tipoGasto==null)
-        {
-            throw new IllegalArgumentException("Tipo de gasto no encontrado");
-        }
-        actividad actividad = actividadRepository.findById(gasto.getActividadId());
-        if(actividad==null)
-        {
-            throw new IllegalArgumentException("Actividad no encontrada");
-        }
-
-        Date fechagasto;
-        try {
-            LocalDate localDate = LocalDate.parse(gasto.getFecha(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-            fechagasto = Date.valueOf(localDate);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Formato de fecha de expiración incorrecto. Use el formato yyyy-MM-dd.");
-        }
-
-        gasto nuevoGasto = new gasto();
-        nuevoGasto.setFecha(fechagasto);
-        nuevoGasto.setMonedaGasto(moneda);
-        nuevoGasto.setFactura(factura);
-        nuevoGasto.setRecursoAsignado(recurso);
-        nuevoGasto.setTipoGasto(tipoGasto);
-        nuevoGasto.setActividad(actividad);
-        nuevoGasto.setDescripcionGasto(gasto.getDescripcionGasto());
-        nuevoGasto.setTotalGasto(gasto.getTotalGasto());
-        nuevoGasto.setTotalMonedaBase(gasto.getTotalMonedaBase());
-
-        gastoRepository.persist(nuevoGasto);
-
-        GastoDTO gastoDTO = new GastoDTO(
-            nuevoGasto.getGastoId(),
-            gasto.getFecha(),
-            moneda.getMonedaId(),
-            factura.getFacturaId(),
-            recurso.getRecursoId(),
-            tipoGasto.getTipoGastoId(),
-            actividad.getActividadId(),
-            nuevoGasto.getDescripcionGasto(),
-            nuevoGasto.getTotalGasto(),
-            nuevoGasto.getTotalMonedaBase()
-        );
-        return gastoDTO;
-
-
-
-
-    }
+public List<GastoDTO> obtenerGastosPorActividad(Long actividadId) {
+    java.util.List<gasto> gastos = gastoRepository.findByActividadId(actividadId);
+    
+    return gastos.stream()
+        .map(g -> new GastoDTO(
+            g.getGastoId(),
+            g.getFecha() != null ? g.getFecha().toString() : null,
+            g.getMonedaGasto() != null ? g.getMonedaGasto().getMonedaId() : null,
+            g.getFactura() != null ? g.getFactura().getFacturaId() : null,
+            g.getRecursoAsignado() != null ? g.getRecursoAsignado().getRecursoId() : null,
+            g.getTipoGasto() != null ? g.getTipoGasto().getTipoGastoId() : null,
+            g.getActividad() != null ? g.getActividad().getActividadId() : null,
+            g.getDescripcionGasto(),
+            g.getTotalGasto(),
+            g.getTotalMonedaBase()
+        ))
+        .toList();
+}
 
 
     @Inject

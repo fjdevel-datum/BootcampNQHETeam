@@ -7,6 +7,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import com.easycheck.application.dto.DetalleGastoDTO;
+import com.easycheck.application.dto.GastoDTO;
 import com.easycheck.domain.service.ExcelGenerator;
 import com.easycheck.domain.service.IServiceGasto;
 import jakarta.inject.Inject;
@@ -15,6 +16,8 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.MediaType;
 
 
 
@@ -39,6 +42,26 @@ public class GastoResource {
         return Response.ok(excelBytes)
                 .header("Content-Disposition", "attachment; filename=" + fileName)
                 .build();
+    }
+
+    @GET
+    @Path("/actividad/{actividadId}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response obtenerGastosPorActividad(@PathParam("actividadId") Long actividadId) {
+        try {
+            System.out.println("GET /gastos/actividad/" + actividadId);
+            
+            List<GastoDTO> gastos = gastoService.obtenerGastosPorActividad(actividadId);
+            
+            System.out.println("Gastos encontrados: " + gastos.size());
+            
+            return Response.ok(gastos).build();
+        } catch (Exception e) {
+            System.err.println("Error al obtener gastos: " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
+                    .build();
+        }
     }
 
 

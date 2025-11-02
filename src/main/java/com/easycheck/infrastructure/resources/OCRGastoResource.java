@@ -15,8 +15,8 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-@Path("ocr/guardarGasto")
-public  class OCRGastoResource {
+@Path("/ocr/guardarGasto")
+public class OCRGastoResource {
     
     @Inject
     DraftGastoService draftGastoService;
@@ -24,7 +24,6 @@ public  class OCRGastoResource {
     @Inject
     IServiceGasto serviceGasto;
 
-    
     @POST
     @Path("/save")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -39,37 +38,42 @@ public  class OCRGastoResource {
         }
 
         try {
-            // 1. Parsear el JSON de Gemini para extraer los datos.
             JSONObject geminiData = new JSONObject(geminiJson);
             
-            // 2. Crear el DTO final que GastoService espera
+            // Crear el DTO final combinando datos de Gemini y del usuario
             GastoDTO gastoDTO = new GastoDTO();
             
             // Mapear datos de Gemini
-            gastoDTO.setFecha(geminiData.getString("Fecha"));
-            gastoDTO.setTotalGasto(geminiData.getDouble("Monto_Total"));
-            gastoDTO.setDescripcionGasto(geminiData.getString("Descripcion_Item"));
+            gastoDTO.setFecha(geminiData.optString("Fecha", ""));
+            gastoDTO.setTotalGasto(geminiData.optDouble("Monto_Total", 0.0));
+            gastoDTO.setDescripcionGasto(geminiData.optString("Descripcion_Item", ""));
             
             // Mapear datos manuales del usuario
             gastoDTO.setMonedaGasto(draft.getMonedaGasto());
-            gastoDTO.setFacturaId(draft.getFacturaId());
+            
+            // ⚠️ IMPORTANTE: Solo asignar facturaId si no es null
+            if (draft.getFacturaId() != null) {
+                gastoDTO.setFacturaId(draft.getFacturaId());
+            }
+            
             gastoDTO.setRecursoId(draft.getRecursoId());
             gastoDTO.setTipoGastoId(draft.getTipoGastoId());
             gastoDTO.setActividadId(draft.getActividadId());
             gastoDTO.setTotalMonedaBase(draft.getTotalMonedaBase());
 
-            // 3. Llamar a la lógica de guardado
+            // Guardar el gasto
             GastoDTO savedGasto = serviceGasto.crearGasto(gastoDTO);
 
             return Response.ok(savedGasto).build();
             
         } catch (IllegalArgumentException e) {
-            // Errores de validación de tu GastoService
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(String.format("{\"error\": \"Validación: %s\"}", e.getMessage())).build();
+                    .entity(String.format("{\"error\": \"%s\"}", e.getMessage())).build();
         } catch (Exception e) {
+            e.printStackTrace(); // Para ver el error completo en los logs
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(String.format("{\"error\": \"Error al guardar el gasto: %s\"}", e.getMessage())).build();
+                    .entity(String.format("{\"error\": \"Error al guardar el gasto: %s\"}", 
+                            e.getMessage())).build();
         }
     }
 }

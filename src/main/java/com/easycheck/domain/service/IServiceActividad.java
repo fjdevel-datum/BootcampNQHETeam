@@ -9,4 +9,5 @@ public interface IServiceActividad {
     
     ActividadDTO crearActividad(ActividadDTO dto) throws IllegalArgumentException;
     List<ActividadListDTO> getActividadByEmpleadoId(Long empleadoId);
+    
 }

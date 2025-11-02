@@ -12,7 +12,7 @@ public interface IServiceGasto {
     
     byte[] generarReporteExcel(Long empleadoId);
 
-    
+    List<GastoDTO> obtenerGastosPorActividad(Long actividadId);
 
     List<DetalleGastoDTO> getDetalleGastos(Long empleadoId, LocalDate fechaInicio, LocalDate fechaFinal);
 }
