@@ -3,6 +3,7 @@ package com.easycheck.domain.service;
 import com.easycheck.application.dto.EmpleadoDTO;
 import com.easycheck.domain.model.centroCosto;
 import com.easycheck.domain.model.empresa;
+import com.easycheck.domain.model.moneda;
 import com.easycheck.domain.model.empleado;
 import com.easycheck.infrastructure.repository.EmpleadoRepository;
 import com.easycheck.infrastructure.repository.centroCostoRepository;
@@ -313,5 +314,16 @@ public class ServiceEmpleadoImp implements IServiceEmpleado {
             empleado.getUid(),
             empleado.getRol()
         );
+    }
+
+      public moneda obtenerMonedaBasePorEmpleado(Long empleadoId) {
+        empleado emp = empleadoRepository.findById(empleadoId);
+        if (emp == null) {
+            return null;
+        }
+        if (emp.getEmpresa() == null || emp.getEmpresa().getMonedaBase() == null) {
+            return null;
+        }
+        return emp.getEmpresa().getMonedaBase();
     }
 }

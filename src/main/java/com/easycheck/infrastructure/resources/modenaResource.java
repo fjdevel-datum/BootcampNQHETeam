@@ -8,7 +8,9 @@ import java.util.stream.Collectors;
 import com.easycheck.application.dto.monedaDTO;
 import com.easycheck.domain.model.moneda;
 import com.easycheck.infrastructure.repository.monedaRepository;
+import com.easycheck.domain.service.IServiceMoneda;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
@@ -20,15 +22,21 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import java.util.Map;
 
 
 @Path("/moneda")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@ApplicationScoped
 public class modenaResource {
 
     @Inject
     monedaRepository monedaRepository;
+
+    @Inject
+    IServiceMoneda serviceMoneda;
 
     @GET
     @Path("/lista")
@@ -78,6 +86,36 @@ public class modenaResource {
         monedaRepository.delete(tMoneda);
         return Response.noContent().build();
     }
+
+    @GET
+    @Path("/convertir")
+    public Response convertirMoneda(
+            @QueryParam("empleadoId") Long empleadoId,
+            @QueryParam("monedaGastoCodigo") String monedaGastoCodigo,
+            @QueryParam("monto") Double monto) {
+
+        if (empleadoId == null || monedaGastoCodigo == null || monto == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Debe enviar empleadoId, monedaGastoCodigo y monto"))
+                    .build();
+        }
+
+        Double montoConvertido = serviceMoneda.convertirAMonedaBase(empleadoId, monedaGastoCodigo, monto);
+
+        if (montoConvertido == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", "No se pudo realizar la conversión"))
+                    .build();
+        }
+
+        return Response.ok(Map.of(
+                "montoOriginal", monto,
+                "monedaGasto", monedaGastoCodigo,
+                "montoMonedaBase", montoConvertido
+        )).build();
+    }
+
+
 
 
 

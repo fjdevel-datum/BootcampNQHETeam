@@ -2,6 +2,7 @@ package com.easycheck.domain.service;
 
 import com.easycheck.application.dto.EmpleadoDTO;
 import com.easycheck.domain.model.empleado;
+import com.easycheck.domain.model.moneda;
 
 import java.util.List;
 
@@ -71,4 +72,6 @@ public interface IServiceEmpleado {
      * Verificar si existe un empleado con el UID dado
      */
     boolean existeEmpleadoConUid(String uid);
+
+    moneda obtenerMonedaBasePorEmpleado(Long empleadoId) throws IllegalArgumentException;
 }

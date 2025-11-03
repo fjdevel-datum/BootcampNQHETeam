@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 
 import com.easycheck.application.dto.EmpleadoDTO;
 import com.easycheck.domain.model.empleado;
+import com.easycheck.domain.model.moneda;
 import com.easycheck.domain.service.IServiceEmpleado;
 import com.easycheck.infrastructure.repository.EmpleadoRepository;
 
@@ -179,6 +180,18 @@ public class EmpleadoResource {
                 .entity(new ErrorResponse("Error interno", e.getMessage()))
                 .build();
         }
+    }
+
+     @GET
+    @Path("/{empleadoId}/moneda-base")
+    public Response obtenerMonedaBase(@PathParam("empleadoId") Long empleadoId) {
+        moneda monedaBase = serviceEmpleado.obtenerMonedaBasePorEmpleado(empleadoId);
+        if (monedaBase == null) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity("{\"error\": \"No se encontró la moneda base para el empleado con ID " + empleadoId + "\"}")
+                    .build();
+        }
+        return Response.ok(monedaBase).build();
     }
 
     // Record para respuestas de error
