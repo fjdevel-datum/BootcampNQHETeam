@@ -18,4 +18,6 @@ public interface IServiceGasto {
     List<DetalleGastoDTO> getDetalleGastos(Long empleadoId, LocalDate fechaInicio, LocalDate fechaFinal);
     
     List<DetalleGastoTarjetaDTO> getDetalleGastosPorTarjeta(Long tarjetaId, LocalDate fechaInicio, LocalDate fechaFinal);
-}
+
+
+byte[] generarReporteExcelPorTarjeta(Long tarjetaId, LocalDate fechaInicio, LocalDate fechaFinal);}

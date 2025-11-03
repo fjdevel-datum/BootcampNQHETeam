@@ -35,7 +35,7 @@ import jakarta.persistence.EntityManager;
 
 import jakarta.transaction.Transactional;
 import jakarta.enterprise.context.ApplicationScoped;
-
+import java.time.format.DateTimeFormatter;
 
 
 
@@ -343,6 +343,67 @@ public List<GastoDTO> obtenerGastosPorActividad(Long actividadId) {
         
         return gastos;
     }
+    
+    // Agregar este método a tu clase ServiceGastoImp
+
+// Agregar este método a tu clase ServiceGastoImp
+
+@Override
+public byte[] generarReporteExcelPorTarjeta(Long tarjetaId, LocalDate fechaInicio, LocalDate fechaFinal) {
+    
+    // Obtener los datos usando el método existente
+    List<DetalleGastoTarjetaDTO> gastos = getDetalleGastosPorTarjeta(tarjetaId, fechaInicio, fechaFinal);
+    
+    if (gastos.isEmpty()) {
+        throw new IllegalArgumentException("No se encontraron gastos para la tarjeta en el rango de fechas especificado");
+    }
+    
+    try (Workbook workbook = new XSSFWorkbook()) {
+        Sheet sheet = workbook.createSheet("Gastos por Tarjeta");
+        
+        // Headers
+        Row header = sheet.createRow(0);
+        String[] headers = {
+            "Empleado ID", "Nombre", "Rol", "Centro", "Empresa",
+            "Número Tarjeta", "Tipo Tarjeta", "Actividad", "Descripción",
+            "Total", "Moneda", "Fecha"
+        };
+        
+        for (int i = 0; i < headers.length; i++) {
+            header.createCell(i).setCellValue(headers[i]);
+        }
+        
+        // Datos
+        int rowNum = 1;
+        for (DetalleGastoTarjetaDTO g : gastos) {
+            Row row = sheet.createRow(rowNum++);
+            row.createCell(0).setCellValue(g.empleadoId());
+            row.createCell(1).setCellValue(g.nombreCompleto());
+            row.createCell(2).setCellValue(g.rol());
+            row.createCell(3).setCellValue(g.nombreCentro());
+            row.createCell(4).setCellValue(g.empresaNombre());
+            row.createCell(5).setCellValue(g.numeroTarjeta());
+            row.createCell(6).setCellValue(g.tipoTarjeta());
+            row.createCell(7).setCellValue(g.nombreActividad());
+            row.createCell(8).setCellValue(g.descripcionGasto());
+            row.createCell(9).setCellValue(g.totalGasto().doubleValue());
+            row.createCell(10).setCellValue(g.simboloMoneda());
+            row.createCell(11).setCellValue(g.fechaGasto().toString());
+        }
+        
+        // Auto-ajustar columnas
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+        
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        workbook.write(out);
+        return out.toByteArray();
+        
+    } catch (IOException e) {
+        throw new RuntimeException("Error generando el reporte de gastos por tarjeta", e);
+    }
+}
 
 
 

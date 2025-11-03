@@ -2,6 +2,7 @@ package com.easycheck.domain.service;
 
 import com.easycheck.application.dto.InformacionRecursoDTO;
 import com.easycheck.application.dto.RecursoAsignadoDTO;
+import com.easycheck.application.dto.RecursoConFechasDTO;
 import com.easycheck.domain.model.empleado;
 import com.easycheck.domain.model.recursoAsignado;
 import com.easycheck.domain.model.tarjeta;
@@ -16,9 +17,12 @@ import jakarta.transaction.Transactional;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.sql.Timestamp;
 
 @ApplicationScoped
 public class ServiceRecursoAsignadoImp implements IServiceRecursoAsignado {
@@ -389,4 +393,88 @@ public InformacionRecursoDTO obtenerInformacionPorEmpleadoYTarjeta(Long empleado
         tipoTarjeta
     );
 }
+
+public List<RecursoConFechasDTO> getRecursosConFechasParaReporte(Long empleadoId) {
+    String jpql = """
+        SELECT 
+            ra.recursoId,
+            t.tarjetaId,
+            t.numeroTarjeta,
+            t.descripcion,
+            tt.tipo,
+            ra.estado,
+            t.diaCorte,
+            ra.fechaAsignacion,
+            t.fechaExpiracion
+        FROM recursoAsignado ra
+        JOIN ra.tarjeta t
+        JOIN t.tipoTarjeta tt
+        WHERE ra.empleado.empleadoId = :empleadoId
+        AND ra.estado = 'Activo'
+        ORDER BY ra.fechaAsignacion DESC
+    """;
+
+    List<Object[]> resultados = em.createQuery(jpql, Object[].class)
+            .setParameter("empleadoId", empleadoId)
+            .getResultList();
+
+    List<RecursoConFechasDTO> recursos = new ArrayList<>();
+    LocalDate hoy = LocalDate.now();
+    for (Object[] row : resultados) {
+        Long recursoId = (Long) row[0];
+        Long tarjetaId = (Long) row[1];
+        String numeroTarjeta = (String) row[2];
+        String descripcionTarjeta = (String) row[3];
+        String tipoTarjeta = (String) row[4];
+        String estado = (String) row[5];
+        Integer diaCorte = (Integer) row[6];
+        Timestamp tsAsignacion = (Timestamp) row[7];
+        Timestamp tsExpiracion = (Timestamp) row[8];
+
+        LocalDate fechaAsignacion = tsAsignacion != null ? tsAsignacion.toLocalDateTime().toLocalDate() : hoy;
+        LocalDate fechaExpiracion = tsExpiracion != null ? tsExpiracion.toLocalDateTime().toLocalDate() : hoy;
+        LocalDate fechaInicio;
+        LocalDate fechaFinal;
+
+        String tipoLower = tipoTarjeta != null ? tipoTarjeta.toLowerCase() : "";
+
+        if (tipoLower.contains("crédito") || tipoLower.contains("credito")) {
+            // CRÉDITO: Período de corte del mes actual
+            int diaCorteVal = (diaCorte != null) ? diaCorte : 1;
+            int diaActual = hoy.getDayOfMonth();
+
+            if (diaActual >= diaCorteVal) {
+                fechaInicio = LocalDate.of(hoy.getYear(), hoy.getMonth(), diaCorteVal);
+                fechaFinal = fechaInicio.plusMonths(1);
+            } else {
+                fechaFinal = LocalDate.of(hoy.getYear(), hoy.getMonth(), diaCorteVal);
+                fechaInicio = fechaFinal.minusMonths(1);
+            }
+        } else {
+            // DÉBITO/VIÁTICO: Período completo
+            fechaInicio = fechaAsignacion;
+            fechaFinal = fechaExpiracion;
+        }
+
+        RecursoConFechasDTO dto = new RecursoConFechasDTO(
+            recursoId,
+            tarjetaId,
+            numeroTarjeta,
+            descripcionTarjeta,
+            tipoTarjeta,
+            estado,
+            fechaInicio.toString(),
+            fechaFinal.toString(),
+            diaCorte,
+            fechaAsignacion.toString(),
+            fechaExpiracion.toString()
+        );
+
+        recursos.add(dto);
+    }
+
+    return recursos;
 }
+
+}
+

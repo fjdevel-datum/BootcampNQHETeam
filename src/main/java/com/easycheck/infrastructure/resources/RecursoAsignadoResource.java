@@ -3,6 +3,7 @@ package com.easycheck.infrastructure.resources;
 import java.util.List;
 
 import com.easycheck.application.dto.RecursoAsignadoDTO;
+import com.easycheck.application.dto.RecursoConFechasDTO;
 import com.easycheck.domain.service.IServiceRecursoAsignado;
 
 import jakarta.inject.Inject;
@@ -91,7 +92,7 @@ public class RecursoAsignadoResource {
             System.err.println("Error de validación: " + e.getMessage());
             return Response.status(Response.Status.BAD_REQUEST)
                 .entity(new ErrorResponse("Error de validación", e.getMessage()))
-                .build();
+                .build(); 
         } catch (Exception e) {
             System.err.println("Error interno: " + e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -218,6 +219,24 @@ public class RecursoAsignadoResource {
                 .build();
         }
     }
+
+    @GET
+    @Path("/empleado/{empleadoId}/para-reporte")
+    public Response getRecursosParaReporte(@PathParam("empleadoId") Long empleadoId) {
+        try {
+            List<RecursoConFechasDTO> recursos = serviceRecurso.getRecursosConFechasParaReporte(empleadoId);
+            
+            return Response.ok(recursos).build();
+                    
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
+                    .build();
+        }
+    }
+
+    
 
     // Records para DTOs
     public record ActualizarRecursoDTO(Double montoMaximo, String estado) {}

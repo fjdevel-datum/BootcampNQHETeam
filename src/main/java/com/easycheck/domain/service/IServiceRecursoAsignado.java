@@ -2,6 +2,8 @@ package com.easycheck.domain.service;
 
 import com.easycheck.application.dto.InformacionRecursoDTO;
 import com.easycheck.application.dto.RecursoAsignadoDTO;
+import com.easycheck.application.dto.RecursoConFechasDTO;
+
 import java.util.List;
 
 public interface IServiceRecursoAsignado {
@@ -22,5 +24,6 @@ public interface IServiceRecursoAsignado {
 
     InformacionRecursoDTO obtenerInformacionPorEmpleadoYTarjeta(Long empleadoId, Long tarjetaId) throws IllegalArgumentException;
     
+    List<RecursoConFechasDTO> getRecursosConFechasParaReporte(Long empleadoId) throws IllegalArgumentException;
 
 }

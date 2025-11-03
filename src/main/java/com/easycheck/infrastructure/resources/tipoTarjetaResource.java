@@ -13,9 +13,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-
-
-
 @Path("/tipoTarjeta")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
@@ -29,10 +26,10 @@ public class tipoTarjetaResource {
     @Transactional
     public Response getTiposTarjeta() {
         List<tipoTarjetaDTO> dtos = tipoTarjetaRepository.listAll().stream()
-            .map(t -> new tipoTarjetaDTO(t.getTipoId(), t.getTipo(), t.getDescripcion()))
-            .collect(Collectors.toList());
+                .map(t -> new tipoTarjetaDTO(t.getTipoId(), t.getTipo(), t.getDescripcion()))
+                .collect(Collectors.toList());
         return Response.ok(dtos).build();
-    }      
+    }
 
     @POST
     @Path("/crear")
@@ -67,7 +64,5 @@ public class tipoTarjetaResource {
         tipoTarjetaRepository.persist(tipoTarjeta);
         return Response.ok(tipoTarjeta).build();
     }
-
-
 
 }
