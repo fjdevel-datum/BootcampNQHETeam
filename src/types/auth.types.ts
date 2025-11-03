@@ -41,7 +41,7 @@ export interface UserData {
   apellidos: string;
   displayName: string;
   rol: UserRole;
-  photoUrl?: string;
+  photoURL?: string;
   empleadoId: number;
   empresaId: number;
   centroId: number;

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Logo from "../../components/Logo";
-import profile from "../../assets/Profile.png";
+import profile from "../../assets/profile.png";
 import SideMenu from "../../components/SideMenu"; 
 import { useNavigate } from "react-router-dom";
 const Home: React.FC = () => {
