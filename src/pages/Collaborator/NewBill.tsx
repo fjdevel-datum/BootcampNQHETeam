@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { 
-  ArrowLeft, Receipt, Calendar, DollarSign, 
+import {
+  ArrowLeft, Receipt, Calendar, DollarSign,
   Sparkles, Image as ImageIcon, Loader2,
   Coins, CreditCard, Tag
 } from "lucide-react";
@@ -34,6 +34,7 @@ interface OCRStorageData {
 
 interface Moneda {
   monedaId: number;
+  codigoISO: string;
   nombreMoneda: string;
   simbolo: string;
 }
@@ -58,23 +59,22 @@ const NewBill: React.FC = () => {
   const location = useLocation();
   const state = location.state as LocationState;
 
-  console.log("🎯 NewBill montado");
-
   const [formData, setFormData] = useState({
     draftId: "",
     descripcion: "",
     fecha: "",
     totalGasto: "",
     totalMonedaBase: "",
-    actividadId: "", // 👈 Se mantiene oculto, no se muestra al usuario
+    actividadId: "",
     monedaId: "",
     tarjetaId: "",
     recursoId: "",
     tipoGastoId: "",
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
+  const [loadingConversion, setLoadingConversion] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [fromOCR, setFromOCR] = useState(false);
 
@@ -85,116 +85,64 @@ const NewBill: React.FC = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   const userData = getCurrentUserData();
 
-  // 🔹 Cargar listas de monedas, tarjetas y tipos de gasto
+  // 🔹 Cargar catálogos
   useEffect(() => {
     const loadCatalogs = async () => {
       try {
         setLoadingData(true);
-        
-        console.log("👤 Datos del usuario completos:", userData);
-
-        // Cargar monedas
-        try {
-          const monedasData = await fetchWithAuth(`${apiUrl}/moneda/lista`);
-          console.log("✅ Monedas cargadas:", monedasData);
-          setMonedas(monedasData);
-        } catch (error) {
-          console.error("❌ Error al cargar monedas:", error);
-          toast.error("Error", "No se pudieron cargar las monedas");
-        }
+        const monedasData = await fetchWithAuth(`${apiUrl}/moneda/lista`);
+        console.log("✅ Monedas cargadas:", monedasData);
+        setMonedas(monedasData);
 
         if (userData?.empleadoId) {
           try {
-            console.log(`🔍 Buscando tarjetas para empleado ID: ${userData.empleadoId}`);
-            const tarjetasData = await fetchWithAuth(
-              `${apiUrl}/tarjeta/usuario/${userData.empleadoId}`
-            );
-            console.log("✅ Tarjetas cargadas:", tarjetasData);
+            const tarjetasData = await fetchWithAuth(`${apiUrl}/tarjeta/usuario/${userData.empleadoId}`);
             setTarjetas(tarjetasData);
           } catch (error: any) {
-            console.error("❌ Error al cargar tarjetas:", error);
-            if (error.message?.includes('404')) {
-              console.log("ℹ️ Usuario sin tarjetas registradas");
-              setTarjetas([]);
-            } else {
-              toast.error("Error", "No se pudieron cargar las tarjetas");
-            }
+            if (error.message?.includes('404')) setTarjetas([]);
           }
         }
 
-        // Cargar tipos de gasto
-        try {
-          const tiposData = await fetchWithAuth(`${apiUrl}/tipoGasto/lista`);
-          console.log("✅ Tipos de gasto cargados:", tiposData);
-          setTiposGasto(tiposData);
-        } catch (error) {
-          console.error("❌ Error al cargar tipos de gasto:", error);
-          toast.error("Error", "No se pudieron cargar los tipos de gasto");
-        }
+        const tiposData = await fetchWithAuth(`${apiUrl}/tipoGasto/lista`);
+        setTiposGasto(tiposData);
 
       } catch (error) {
-        console.error("❌ Error general al cargar catálogos:", error);
+        console.error("❌ Error al cargar datos:", error);
         toast.error("Error al cargar datos", "No se pudieron cargar las opciones disponibles");
       } finally {
         setLoadingData(false);
       }
     };
-
     loadCatalogs();
   }, [apiUrl]);
 
-  // Cargar datos del OCR
+  // 🔹 OCR
   useEffect(() => {
-    console.log("🔍 Verificando datos del OCR...");
-    
-    // 👇 Cargar actividadId automáticamente sin mostrarlo
     if (state?.actividadId) {
-      console.log("📌 Actividad ID cargado automáticamente:", state.actividadId);
       setFormData(prev => ({ ...prev, actividadId: state.actividadId! }));
     }
-    
     if (state?.draftId && state?.geminiData) {
-      console.log("📦 Datos encontrados en location.state");
       loadOCRData(state.draftId, state.geminiData, state.imageUrl);
       return;
     }
-
     const savedData = sessionStorage.getItem('ocrData');
     if (savedData) {
-      try {
-        const ocrData: OCRStorageData = JSON.parse(savedData);
-        console.log("📦 Datos encontrados en sessionStorage:", ocrData);
-        
-        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-        if (ocrData.timestamp < fiveMinutesAgo) {
-          console.log("⏰ Datos demasiado antiguos, ignorando");
-          sessionStorage.removeItem('ocrData');
-          return;
-        }
-
-        loadOCRData(ocrData.draftId, ocrData.geminiData, ocrData.imageUrl);
-        
-        if (ocrData.actividadId) {
-          setFormData(prev => ({ ...prev, actividadId: ocrData.actividadId! }));
-        }
-        
+      const ocrData: OCRStorageData = JSON.parse(savedData);
+      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+      if (ocrData.timestamp < fiveMinutesAgo) {
         sessionStorage.removeItem('ocrData');
-        console.log("🧹 SessionStorage limpiado");
-        
-      } catch (error) {
-        console.error("❌ Error al parsear datos de sessionStorage:", error);
-        sessionStorage.removeItem('ocrData');
+        return;
       }
-    } else {
-      console.log("⚠️ No se encontraron datos del OCR");
+      loadOCRData(ocrData.draftId, ocrData.geminiData, ocrData.imageUrl);
+      if (ocrData.actividadId) {
+        setFormData(prev => ({ ...prev, actividadId: ocrData.actividadId! }));
+      }
+      sessionStorage.removeItem('ocrData');
     }
   }, [state]);
 
   const loadOCRData = (draftId: string, geminiData: GeminiData, imageUrl?: string | null) => {
-    console.log("📥 Cargando datos del OCR...");
-    
     const monto = geminiData.Monto_Total?.toString() || "";
-    
     setFormData(prev => ({
       ...prev,
       draftId,
@@ -203,11 +151,7 @@ const NewBill: React.FC = () => {
       totalGasto: monto,
       totalMonedaBase: monto,
     }));
-
-    if (imageUrl) {
-      setImagePreview(imageUrl);
-    }
-
+    if (imageUrl) setImagePreview(imageUrl);
     setFromOCR(true);
     toast.success("Datos cargados", "Información extraída del comprobante. Completa los campos necesarios.");
   };
@@ -217,110 +161,113 @@ const NewBill: React.FC = () => {
     navigate(-1);
   };
 
-  const handleTotalGastoChange = (value: string) => {
-    if (/^\d*\.?\d{0,2}$/.test(value)) {
-      setFormData({ 
-        ...formData, 
-        totalGasto: value,
-        totalMonedaBase: value
-      });
+  // 🔹 Convertir monto usando el endpoint del backend
+  const convertirMoneda = async (monto: string, monedaId: string) => {
+    if (!monto || !monedaId || !userData?.empleadoId) {
+      setFormData(prev => ({ ...prev, totalMonedaBase: monto }));
+      return;
+    }
+
+    const monedaSeleccionada = monedas.find(m => m.monedaId.toString() === monedaId);
+    if (!monedaSeleccionada) {
+      setFormData(prev => ({ ...prev, totalMonedaBase: monto }));
+      return;
+    }
+
+    setLoadingConversion(true);
+    
+    try {
+      const url = `${apiUrl}/moneda/convertir?empleadoId=${userData.empleadoId}&monedaGastoCodigo=${monedaSeleccionada.codigoISO}&monto=${parseFloat(monto)}`;
+      console.log("🔄 Convirtiendo moneda:", url);
+
+      const response = await fetchWithAuth(url);
+      console.log("✅ Respuesta conversión:", response);
+
+      if (response && response.montoMonedaBase !== undefined) {
+        setFormData(prev => ({
+          ...prev,
+          totalMonedaBase: response.montoMonedaBase.toFixed(2)
+        }));
+        console.log(`💰 Conversión: ${monto} ${monedaSeleccionada.codigoISO} = ${response.montoMonedaBase.toFixed(2)} USD`);
+      } else {
+        // Si no hay conversión, usar el monto original
+        setFormData(prev => ({ ...prev, totalMonedaBase: monto }));
+      }
+    } catch (error) {
+      console.error("❌ Error al convertir moneda:", error);
+      // En caso de error, mantener el monto original
+      setFormData(prev => ({ ...prev, totalMonedaBase: monto }));
+      toast.warning("Conversión no disponible", "Se usará el monto original");
+    } finally {
+      setLoadingConversion(false);
     }
   };
 
-  // 🔹 Cuando selecciona una tarjeta, obtener el recursoId correspondiente
-  const handleTarjetaChange = async (tarjetaId: string) => {
-    console.log("💳 Tarjeta seleccionada:", tarjetaId);
-    setFormData({ ...formData, tarjetaId, recursoId: "" });
+  // 🔹 Manejar cambio de monto
+  const handleTotalGastoChange = (value: string) => {
+    if (!/^\d*\.?\d{0,2}$/.test(value)) return;
     
+    setFormData(prev => ({ ...prev, totalGasto: value }));
+    
+    // Convertir automáticamente si hay moneda seleccionada
+    if (formData.monedaId && value) {
+      convertirMoneda(value, formData.monedaId);
+    } else {
+      setFormData(prev => ({ ...prev, totalMonedaBase: value }));
+    }
+  };
+
+  // 🔹 Manejar cambio de moneda
+  const handleMonedaChange = (monedaId: string) => {
+    setFormData(prev => ({ ...prev, monedaId }));
+    
+    // Reconvertir el monto existente con la nueva moneda
+    if (formData.totalGasto) {
+      convertirMoneda(formData.totalGasto, monedaId);
+    }
+  };
+
+  const handleTarjetaChange = async (tarjetaId: string) => {
+    setFormData({ ...formData, tarjetaId, recursoId: "" });
     if (!tarjetaId) return;
 
     try {
-      const userData = getCurrentUserData();
-      console.log("👤 UserData para buscar recurso:", userData);
-      
       if (!userData?.empleadoId) {
-        console.error("❌ No se encontró empleadoId en userData");
         toast.error("Error", "No se pudo identificar al empleado");
         return;
       }
 
-      console.log(`🔍 Buscando recurso: tarjeta=${tarjetaId}, empleado=${userData.empleadoId}`);
-      
       const recursoData = await fetchWithAuth(
         `${apiUrl}/recursoAsignado/tarjeta/${tarjetaId}/empleado/${userData.empleadoId}`
       );
 
-      console.log("📦 Recurso obtenido:", recursoData);
-
       if (recursoData && recursoData.recursoId) {
         setFormData(prev => ({ ...prev, recursoId: recursoData.recursoId.toString() }));
-        console.log("✅ Recurso ID asignado:", recursoData.recursoId);
         toast.success("Recurso asignado", "Se vinculó la tarjeta con el recurso");
       } else {
-        console.warn("⚠️ Recurso obtenido pero sin recursoId:", recursoData);
         toast.warning("Advertencia", "No se encontró el ID del recurso");
       }
     } catch (error: any) {
       console.error("❌ Error al obtener recurso:", error);
-      toast.error("Error", `No se pudo obtener el recurso: ${error.message || 'Error desconocido'}`);
+      toast.error("Error", `No se pudo obtener el recurso: ${error.message}`);
     }
   };
 
-  // 🔹 Función para obtener últimos 4 dígitos
   const getUltimos4Digitos = (numeroTarjeta: string): string => {
     if (!numeroTarjeta) return "****";
     return numeroTarjeta.slice(-4);
   };
 
   const handleGuardar = async () => {
-    console.log("💾 Iniciando guardado...");
-    
-    // Validaciones
-    if (!formData.descripcion.trim()) {
-      toast.error("Campo requerido", "Por favor ingresa la descripción del gasto");
-      return;
-    }
-
-    if (!formData.fecha) {
-      toast.error("Campo requerido", "Selecciona la fecha del gasto");
-      return;
-    }
-
-    if (!formData.totalGasto || parseFloat(formData.totalGasto) <= 0) {
-      toast.error("Monto inválido", "El monto debe ser mayor a 0");
-      return;
-    }
-
-    if (!formData.monedaId) {
-      toast.error("Campo requerido", "Selecciona una moneda");
-      return;
-    }
-
-    if (!formData.tarjetaId) {
-      toast.error("Campo requerido", "Selecciona una tarjeta");
-      return;
-    }
-
-    if (!formData.recursoId) {
-      toast.error("Error", "No se pudo obtener el recurso asociado a la tarjeta");
-      return;
-    }
-
-    if (!formData.tipoGastoId) {
-      toast.error("Campo requerido", "Selecciona un tipo de gasto");
-      return;
-    }
-
-    // 👇 Validación silenciosa - no se muestra al usuario
-    if (!formData.actividadId) {
-      toast.error("Error", "No se pudo identificar la actividad asociada");
-      return;
-    }
-
-    if (!formData.draftId) {
-      toast.error("Error", "No hay draftId. Debes escanear un comprobante primero.");
-      return;
-    }
+    if (!formData.descripcion.trim()) return toast.error("Campo requerido", "Por favor ingresa la descripción del gasto");
+    if (!formData.fecha) return toast.error("Campo requerido", "Selecciona la fecha del gasto");
+    if (!formData.totalGasto || parseFloat(formData.totalGasto) <= 0) return toast.error("Monto inválido", "El monto debe ser mayor a 0");
+    if (!formData.monedaId) return toast.error("Campo requerido", "Selecciona una moneda");
+    if (!formData.tarjetaId) return toast.error("Campo requerido", "Selecciona una tarjeta");
+    if (!formData.recursoId) return toast.error("Error", "No se pudo obtener el recurso asociado a la tarjeta");
+    if (!formData.tipoGastoId) return toast.error("Campo requerido", "Selecciona un tipo de gasto");
+    if (!formData.actividadId) return toast.error("Error", "No se pudo identificar la actividad asociada");
+    if (!formData.draftId) return toast.error("Error", "No hay draftId. Debes escanear un comprobante primero.");
 
     setLoading(true);
     const loadingToast = toast.loading("Guardando gasto...");
@@ -331,19 +278,15 @@ const NewBill: React.FC = () => {
         monedaGasto: parseInt(formData.monedaId),
         recursoId: parseInt(formData.recursoId),
         tipoGastoId: parseInt(formData.tipoGastoId),
-        actividadId: parseInt(formData.actividadId), // 👈 Se envía automáticamente
+        actividadId: parseInt(formData.actividadId),
         totalMonedaBase: parseFloat(formData.totalMonedaBase),
       };
 
       console.log("📤 Enviando DTO al backend:", gastoDraftDTO);
 
       const token = localStorage.getItem('token');
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json'
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
       const response = await fetch(`${apiUrl}/ocr/guardarGasto/save`, {
         method: "POST",
@@ -351,40 +294,24 @@ const NewBill: React.FC = () => {
         body: JSON.stringify(gastoDraftDTO),
       });
 
-      console.log("📥 Respuesta del servidor:", response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ Error del servidor:", errorText);
-        
-        try {
-          const errorData = JSON.parse(errorText);
-          throw new Error(errorData.error || "Error al guardar el gasto");
-        } catch {
-          throw new Error(`Error ${response.status}: ${errorText}`);
-        }
+        throw new Error(errorText);
       }
 
       const savedGasto = await response.json();
       console.log("✅ Gasto guardado exitosamente:", savedGasto);
 
       toast.dismiss(loadingToast);
-      toast.success(
-        "Gasto registrado",
-        `${formData.descripcion} - $${parseFloat(formData.totalGasto).toFixed(2)}`
-      );
-      
-      setTimeout(() => {
-        navigate(-1);
-      }, 1000);
+      toast.success("Gasto registrado", `${formData.descripcion} - $${parseFloat(formData.totalGasto).toFixed(2)}`);
+
+      setTimeout(() => navigate(-1), 1000);
 
     } catch (err) {
       console.error("❌ Error al guardar:", err);
       toast.dismiss(loadingToast);
-      toast.error(
-        "Error al guardar",
-        err instanceof Error ? err.message : "No se pudo guardar el gasto"
-      );
+      toast.error("Error al guardar", err instanceof Error ? err.message : "No se pudo guardar el gasto");
     } finally {
       setLoading(false);
     }
@@ -434,7 +361,7 @@ const NewBill: React.FC = () => {
           </div>
         )}
 
-        {/* Loading state para catálogos */}
+        {/* Loading state */}
         {loadingData ? (
           <div className="bg-white shadow-lg rounded-2xl p-12 flex flex-col items-center justify-center">
             <Loader2 className="w-12 h-12 text-button animate-spin mb-4" />
@@ -443,7 +370,7 @@ const NewBill: React.FC = () => {
         ) : (
           <div className="bg-white shadow-lg rounded-2xl p-6 md:p-8">
             <div className="space-y-6">
-              {/* Descripción del Gasto */}
+              {/* Descripción */}
               <div>
                 <label className="flex items-center gap-2 font-semibold text-gray-700 mb-2">
                   <Receipt className="w-4 h-4 text-button" />
@@ -454,7 +381,7 @@ const NewBill: React.FC = () => {
                   value={formData.descripcion}
                   onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-button focus:border-button outline-none transition-all"
-                  placeholder="Ej: Almuerzo de negocios, Taxi al aeropuerto"
+                  placeholder="Ej: Almuerzo de negocios"
                   disabled={loading}
                 />
               </div>
@@ -492,15 +419,16 @@ const NewBill: React.FC = () => {
                     disabled={loading}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Se aplicará el mismo monto en moneda base
+                    Monto en {monedas.find(m => m.monedaId.toString() === formData.monedaId)?.nombreMoneda || "moneda seleccionada"}
                   </p>
                 </div>
 
-                {/* Total Moneda Base (readonly) */}
+                {/* Total Moneda Base */}
                 <div>
                   <label className="flex items-center gap-2 font-semibold text-gray-700 mb-2">
                     <DollarSign className="w-4 h-4 text-button" />
                     Monto en Moneda Base *
+                    {loadingConversion && <Loader2 className="w-3 h-3 animate-spin ml-2" />}
                   </label>
                   <input
                     type="text"
@@ -509,19 +437,23 @@ const NewBill: React.FC = () => {
                     disabled
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Sincronizado con el monto total
+                    {formData.monedaId && formData.totalGasto ? (
+                      `Conversión automática aplicada`
+                    ) : (
+                      'Selecciona una moneda para ver la conversión'
+                    )}
                   </p>
                 </div>
               </div>
 
-              {/* SELECTORES */}
+              {/* Selectores */}
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg space-y-4">
                 <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
                   <Tag className="w-4 h-4" />
                   Información Adicional
                 </h3>
                 
-                {/* Selector de Moneda */}
+                {/* Moneda */}
                 <div>
                   <label className="flex items-center gap-2 font-semibold text-gray-700 mb-2">
                     <Coins className="w-4 h-4 text-button" />
@@ -529,20 +461,20 @@ const NewBill: React.FC = () => {
                   </label>
                   <select
                     value={formData.monedaId}
-                    onChange={(e) => setFormData({ ...formData, monedaId: e.target.value })}
+                    onChange={(e) => handleMonedaChange(e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-button focus:border-button outline-none transition-all bg-white"
                     disabled={loading}
                   >
                     <option value="">Selecciona una moneda</option>
                     {monedas.map((moneda) => (
                       <option key={moneda.monedaId} value={moneda.monedaId}>
-                        {moneda.nombreMoneda}
+                        {moneda.nombreMoneda} ({moneda.codigoISO})
                       </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Selector de Tarjeta */}
+                {/* Tarjeta */}
                 <div>
                   <label className="flex items-center gap-2 font-semibold text-gray-700 mb-2">
                     <CreditCard className="w-4 h-4 text-button" />
@@ -568,7 +500,7 @@ const NewBill: React.FC = () => {
                   )}
                 </div>
 
-                {/* Selector de Tipo de Gasto */}
+                {/* Tipo de Gasto */}
                 <div>
                   <label className="flex items-center gap-2 font-semibold text-gray-700 mb-2">
                     <Tag className="w-4 h-4 text-button" />
@@ -588,8 +520,6 @@ const NewBill: React.FC = () => {
                     ))}
                   </select>
                 </div>
-
-                {/* 👇 CAMPO DE ACTIVIDAD ELIMINADO - Ya no se muestra */}
               </div>
             </div>
 
@@ -597,13 +527,18 @@ const NewBill: React.FC = () => {
             <div className="mt-8">
               <button
                 onClick={handleGuardar}
-                disabled={loading || !formData.draftId}
+                disabled={loading || !formData.draftId || loadingConversion}
                 className="w-full bg-button hover:bg-button-hover text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
                     Guardando...
+                  </>
+                ) : loadingConversion ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Convirtiendo...
                   </>
                 ) : (
                   <>
@@ -620,7 +555,7 @@ const NewBill: React.FC = () => {
           </div>
         )}
 
-        {/* Información adicional */}
+        {/* Información OCR */}
         {fromOCR && !loadingData && (
           <div className="mt-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
             <div className="flex items-start gap-3">
