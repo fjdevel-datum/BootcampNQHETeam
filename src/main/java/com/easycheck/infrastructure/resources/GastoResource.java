@@ -7,6 +7,7 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import com.easycheck.application.dto.DetalleGastoDTO;
+import com.easycheck.application.dto.DetalleGastoTarjetaDTO;
 import com.easycheck.application.dto.GastoDTO;
 import com.easycheck.domain.service.ExcelGenerator;
 import com.easycheck.domain.service.IServiceGasto;
@@ -119,6 +120,59 @@ public class GastoResource {
                     .build();
         } catch (Exception e) {
             // Manejar error de base de datos (de GastoServiceImpl)
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error al consultar los datos: " + e.getMessage())
+                    .build();
+        }
+    }
+
+
+    ////////////////////////////////////////////
+    @GET
+    @Path("/reporteTarjeta/excel")
+    @Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public Response generarReporteExcelPorTarjeta(
+            @QueryParam("tarjetaId") Long tarjetaId,
+            @QueryParam("fechaInicio") String fechaInicioStr,
+            @QueryParam("fechaFinal") String fechaFinalStr) {
+
+        // 1. Validar entradas
+        if (tarjetaId == null || fechaInicioStr == null || fechaFinalStr == null) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Los parámetros 'tarjetaId', 'fechaInicio' y 'fechaFinal' son obligatorios.")
+                    .build();
+        }
+
+        LocalDate fechaInicio;
+        LocalDate fechaFinal;
+        try {
+            fechaInicio = LocalDate.parse(fechaInicioStr);
+            fechaFinal = LocalDate.parse(fechaFinalStr);
+        } catch (DateTimeParseException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Formato de fecha inválido. Use AAAA-MM-DD.")
+                    .build();
+        }
+
+        try {
+            // 2. Llamar al nuevo método del servicio
+            List<DetalleGastoTarjetaDTO> gastos = gastoService.getDetalleGastosPorTarjeta(tarjetaId, fechaInicio, fechaFinal);
+
+            // 3. Generar el Excel con el nuevo método del generador
+            ByteArrayInputStream excelStream = excelGenerator.gastosTarjetaToExcel(gastos);
+
+            // 4. Crear nombre de archivo y devolver
+            String filename = String.format("ReporteTarjeta_T%d_%s.xlsx", tarjetaId, fechaFinalStr);
+            
+            return Response.ok(excelStream)
+                    .header("Content-Disposition", "attachment; filename=\"" + filename + "\"")
+                    .build();
+
+        } catch (IOException e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error al generar el archivo Excel: " + e.getMessage())
+                    .build();
+        } catch (Exception e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error al consultar los datos: " + e.getMessage())
                     .build();

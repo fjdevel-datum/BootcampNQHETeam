@@ -17,6 +17,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import com.easycheck.application.dto.GastoDTO;
 import com.easycheck.application.dto.DetalleGastoDTO;
+import com.easycheck.application.dto.DetalleGastoTarjetaDTO;
 import com.easycheck.domain.model.actividad;
 import com.easycheck.domain.model.factura;
 import com.easycheck.domain.model.gasto;
@@ -248,6 +249,7 @@ public List<GastoDTO> obtenerGastosPorActividad(Long actividadId) {
 
 
     ///////////////////////////////////////////////////////////////////////////////
+    /// gastos por empleado y rango de fechas
 
     @Inject
     DataSource dataSource; // Inyectamos el pool de conexiones de Quarkus
@@ -296,5 +298,56 @@ public List<GastoDTO> obtenerGastosPorActividad(Long actividadId) {
         
         return gastos;
     }
+
+    ////////////////////////////////////////////////////////////////////////////////
+    // detalle de gastos por tarjeta y rango de fechas
+
+    @Override
+    public List<DetalleGastoTarjetaDTO> getDetalleGastosPorTarjeta(Long tarjetaId, LocalDate fechaInicio, LocalDate fechaFinal) {
+        List<DetalleGastoTarjetaDTO> gastos = new ArrayList<>();
+        
+        // Llamamos a la nueva función de Oracle
+        String sql = "SELECT * FROM TABLE(C##EASYCHECK.F_DETALLE_GASTOS_TARJETA(?, ?, ?))";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            // Asignamos los parámetros de la nueva función
+            ps.setLong(1, tarjetaId);
+            ps.setDate(2, Date.valueOf(fechaInicio));
+            ps.setDate(3, Date.valueOf(fechaFinal));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                // Mapeamos al nuevo DTO
+                while (rs.next()) {
+                    DetalleGastoTarjetaDTO gasto = new DetalleGastoTarjetaDTO(
+                        rs.getLong("EmpleadoId"),
+                        rs.getString("Nombre_Completo"),
+                        rs.getString("Rol"),
+                        rs.getString("NombreCentro"),
+                        rs.getString("EmpresaNombre"),
+                        rs.getString("NumeroTarjeta"),
+                        rs.getString("TipoTarjeta"),
+                        rs.getString("NombreActividad"),
+                        rs.getString("DescripcionGasto"),
+                        rs.getBigDecimal("TotalGasto"),
+                        rs.getString("SimboloMoneda"),
+                        rs.getDate("FechaGasto").toLocalDate()
+                    );
+                    gastos.add(gasto);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error al consultar la función de gastos por tarjeta", e);
+        }
+        
+        return gastos;
+    }
+
+
+
+
+
+
     
 }
