@@ -83,8 +83,7 @@ const Activities: React.FC = () => {
     });
 
   const handleGenerateReport = () => {
-    toast.info("Función en desarrollo", "La generación de reportes estará disponible próximamente");
-    console.log("Generar reporte - Función pendiente");
+    navigate("/colaborators/generate-report");
   };
 
   return (

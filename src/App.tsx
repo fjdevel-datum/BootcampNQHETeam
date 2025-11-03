@@ -30,6 +30,7 @@ import NewBill from "./pages/Collaborator/NewBill";
 import NewIncidence from "./pages/Collaborator/NewIncidence";
 import SeeCard from "./pages/Collaborator/SeeCard";
 import UserCards from "./pages/Collaborator/UserCards";
+import GenerateReport from "./pages/Collaborator/GenerateReport";
 
 // ========== COMPONENTE DE NO AUTORIZADO ==========
 const Unauthorized: React.FC = () => (
@@ -220,6 +221,14 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute allowedRoles={["EMPLEADO"]}>
                       <NewIncidence />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/colaborators/generate-report"
+                  element={
+                    <ProtectedRoute allowedRoles={["EMPLEADO"]}>
+                      <GenerateReport />
                     </ProtectedRoute>
                   }
                 />
