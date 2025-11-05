@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Receipt, Calendar, DollarSign,
   Sparkles, Image as ImageIcon, Loader2,
   Coins, CreditCard, Tag, FileText
 } from "lucide-react";
 import { toast } from "../../components/toast";
-import { fetchWithAuth, getCurrentUserData } from "../../services/authService";
+import { fetchWithAuth, getCurrentUserData } from "../../services/authService"
 
 interface GeminiData {
   Nombre_Pagador: string;
@@ -83,6 +83,7 @@ const NewBill: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [fileType, setFileType] = useState<'image' | 'pdf' | null>(null);
   const [fromOCR, setFromOCR] = useState(false);
+  const [searchParams] = useSearchParams();
 
   const [monedas, setMonedas] = useState<Moneda[]>([]);
   const [tarjetas, setTarjetas] = useState<Tarjeta[]>([]);

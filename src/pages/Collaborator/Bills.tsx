@@ -169,141 +169,122 @@ const Bills: React.FC = () => {
   };
 
   const handleApprove = async () => {
-    if (!capturedPhoto) {
-      toast.error("Error", "No hay archivo capturado");
-      return;
+  if (!capturedPhoto) {
+    toast.error("Error", "No hay archivo capturado");
+    return;
+  }
+
+  setLoading(true);
+  let loadingToastId: any = null;
+
+  try {
+    console.log("🎬 INICIO handleApprove");
+
+    loadingToastId = toast.loading("Procesando imagen...");
+
+    const blob = await fetch(capturedPhoto).then((r) => r.blob());
+    if (blob.size === 0) throw new Error("La imagen está vacía");
+
+    const token = localStorage.getItem("token");
+    const headers: HeadersInit = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
+
+    const formDataFactura = new FormData();
+    formDataFactura.append("file", blob, "comprobante.jpg");
+
+    const formDataOCR = new FormData();
+    formDataOCR.append("file", blob, "comprobante.jpg");
+
+    console.log("🚀 Enviando solicitudes paralelas...");
+
+    // ⚙️ Ejecutar OCR y Factura en paralelo (aunque una falle)
+    const [facturaResponse, ocrResponse] = await Promise.allSettled([
+      fetch(`${apiUrl}/factura/upload`, {
+        method: "POST",
+        headers,
+        body: formDataFactura,
+      }),
+      fetch(`${apiUrl}/ocr2/extract2`, {
+        method: "POST",
+        headers,
+        body: formDataOCR,
+      }),
+    ]);
+
+    let facturaId: number | null = null;
+    let ocrData: OCRResponse | null = null;
+
+    // 🧾 Procesar factura (sin bloquear)
+    if (
+      facturaResponse.status === "fulfilled" &&
+      facturaResponse.value.ok
+    ) {
+      const facturaJson: FacturaResponse = await facturaResponse.value.json();
+      facturaId = facturaJson.facturaId;
+      console.log("✅ Factura subida con éxito:", facturaId);
+    } else {
+      console.warn("⚠️ Error al subir factura (continuando flujo)");
+      toast.warning("Advertencia", "No se pudo subir la factura, se continuará el proceso.");
     }
 
-    setLoading(true);
-    let loadingToastId: any = null;
+    // 🔍 Procesar OCR
+    if (
+      ocrResponse.status === "fulfilled" &&
+      ocrResponse.value.ok
+    ) {
+      ocrData = await ocrResponse.value.json();
+      console.log("✅ OCR procesado correctamente");
+    } else {
+      const errText =
+        ocrResponse.status === "fulfilled"
+          ? await ocrResponse.value.text()
+          : "No se pudo conectar con el OCR";
+      throw new Error(`Error en OCR: ${errText}`);
+    }
 
-    try {
-      console.log("🎬 INICIO handleApprove");
-      console.log("📸 capturedPhoto:", capturedPhoto?.substring(0, 50));
-      
-      loadingToastId = toast.loading("Procesando imagen...");
-      console.log("🔔 Toast mostrado");
+    if (!ocrData?.draftId || !ocrData?.geminiData) {
+      throw new Error("Respuesta OCR incompleta");
+    }
 
-      console.log("🔄 Convirtiendo a blob...");
-      const blob = await fetch(capturedPhoto).then((r) => r.blob());
-      console.log("✅ Blob creado:", blob.size, "bytes", blob.type);
+    // 💾 Guardar en sessionStorage
+    const dataToSave = {
+      draftId: ocrData.draftId,
+      geminiData: ocrData.geminiData,
+      imageUrl: capturedPhoto,
+      timestamp: Date.now(),
+      actividadId: id,
+      facturaId: facturaId, // puede ser null
+    };
+    sessionStorage.setItem("ocrData", JSON.stringify(dataToSave));
 
-      if (blob.size === 0) {
-        throw new Error("La imagen está vacía");
-      }
+    if (loadingToastId) toast.dismiss(loadingToastId);
+    toast.success("Proceso completado", "Factura y OCR procesados correctamente");
 
-      const token = localStorage.getItem('token');
-      console.log("🔑 Token:", token ? "✅ Existe" : "❌ No existe");
+    console.log("➡️ Navegando a NewBill...");
 
-      const headers: HeadersInit = token 
-        ? { 'Authorization': `Bearer ${token}` }
-        : {};
-
-      // 🔹 Crear FormData separados para cada llamada
-      const formData1 = new FormData();
-      formData1.append("file", blob, "comprobante.jpg");
-      console.log("📦 FormData1 creado para factura");
-
-      const formData2 = new FormData();
-      formData2.append("file", blob, "comprobante.jpg");
-      console.log("📦 FormData2 creado para OCR");
-
-      console.log("🚀 Ejecutando AMBAS llamadas en paralelo...");
-      console.log("URL Factura:", `${apiUrl}/factura/upload`);
-      console.log("URL OCR:", `${apiUrl}/ocr2/extract2`);
-
-      // 🔹 EJECUTAR AMBAS EN PARALELO
-      const [facturaResponse, ocrResponse] = await Promise.all([
-        fetch(`${apiUrl}/factura/upload`, {
-          method: "POST",
-          headers: headers,
-          body: formData1,
-        }),
-        fetch(`${apiUrl}/ocr2/extract2`, {
-          method: "POST",
-          headers: headers,
-          body: formData2,
-        })
-      ]);
-
-      console.log("✅ Respuesta Factura status:", facturaResponse.status);
-      console.log("✅ Respuesta OCR status:", ocrResponse.status);
-
-      // 🔹 Procesar respuesta de factura
-      if (!facturaResponse.ok) {
-        const errorText = await facturaResponse.text();
-        console.error("❌ Error factura:", errorText);
-        throw new Error(`Error al subir factura (${facturaResponse.status}): ${errorText}`);
-      }
-
-      const facturaData: FacturaResponse = await facturaResponse.json();
-      console.log("✅ Factura creada exitosamente!");
-      console.log("🆔 Factura ID:", facturaData.facturaId);
-
-      // 🔹 Procesar respuesta de OCR
-      if (!ocrResponse.ok) {
-        const errorText = await ocrResponse.text();
-        console.error("❌ Error OCR:", errorText);
-        throw new Error(`Error en OCR (${ocrResponse.status}): ${errorText}`);
-      }
-
-      const ocrData: OCRResponse = await ocrResponse.json();
-      console.log("✅ OCR procesado exitosamente!");
-      console.log("🎫 Draft ID:", ocrData.draftId);
-      console.log("📊 Gemini Data:", ocrData.geminiData);
-
-      if (!ocrData.draftId || !ocrData.geminiData) {
-        throw new Error("Respuesta incompleta del servidor OCR");
-      }
-
-      // 🔹 Guardar TODO en sessionStorage
-      const dataToSave = {
-        draftId: ocrData.draftId,
-        geminiData: ocrData.geminiData,
-        imageUrl: capturedPhoto,
-        timestamp: Date.now(),
+    navigate("/NewBill", {
+      state: {
         actividadId: id,
-        facturaId: facturaData.facturaId
-      };
-      
-      sessionStorage.setItem('ocrData', JSON.stringify(dataToSave));
-      console.log("💾 Datos guardados en sessionStorage");
+        facturaId: facturaId,
+      },
+    });
+  } catch (err) {
+    console.error("❌ ERROR CAPTURADO:", err);
+    if (loadingToastId) toast.dismiss(loadingToastId);
+    toast.error(
+      "Error en proceso",
+      err instanceof Error ? err.message : "No se pudo procesar la imagen"
+    );
+  } finally {
+    setLoading(false);
+    closeCamera();
+    setShowApproval(false);
+    setCapturedPhoto(null);
+    setFileType(null);
+  }
+};
 
-      if (loadingToastId) toast.dismiss(loadingToastId);
-      toast.success("Proceso completado", "Factura y OCR procesados correctamente");
-
-      // Limpiar URL blob
-      if (capturedPhoto?.startsWith("blob:")) {
-        alert('no se borra la imagen')
-        // URL.revokeObjectURL(capturedPhoto);
-      }
-
-      console.log("🔄 Navegando a NewBill...");
-      
-      navigate("/NewBill", {
-        state: {
-          actividadId: id,
-          facturaId: facturaData.facturaId
-        }
-      });
-
-    } catch (err) {
-      console.error("❌ ERROR CAPTURADO:", err);
-      console.error("❌ Error stack:", err instanceof Error ? err.stack : 'No stack');
-      
-      if (loadingToastId) toast.dismiss(loadingToastId);
-      toast.error(
-        "Error en proceso", 
-        err instanceof Error ? err.message : "No se pudo procesar la imagen"
-      );
-    } finally {
-      setLoading(false);
-      closeCamera();
-      setShowApproval(false);
-      setCapturedPhoto(null);
-      setFileType(null);
-    }
-  };
 
   const handleRetake = () => {
     toast.info("Repitiendo captura", "Toma una nueva fotografía o selecciona otro archivo");
