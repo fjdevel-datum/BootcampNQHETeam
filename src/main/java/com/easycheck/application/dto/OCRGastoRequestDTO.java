@@ -23,5 +23,8 @@ public class OCRGastoRequestDTO {
     @FormParam("recursoId")
     public Long recursoId;
 
+    @FormParam("facturaId") // <-- ASEGÚRATE DE VOLVER A AGREGAR ESTA LÍNEA
+    public Long facturaId;
+
     
 }

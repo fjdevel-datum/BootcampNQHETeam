@@ -63,48 +63,28 @@ public class ServiceOCRGasto {
 
     public GastoDTO procesarFacturayGuardarGasto(OCRGastoRequestDTO dto) throws IOException
     {
-        // ---------------------------------------------------------------------
-        //  Paso CRÍTICO: Leer el InputStream a un byte[]
-        //  Un InputStream solo se puede leer UNA VEZ. Como lo necesitamos 2 veces
-        //  (1 para OpenKM, 1 para OCR), lo pasamos a un array de bytes.
-        // ---------------------------------------------------------------------
-        byte[] fileBytes = dto.file.readAllBytes();
-        dto.file.close(); // Cerramos el stream original
+    // Se eliminó la lógica de byte[], OpenKM y creación de newFactura
 
-        // 1️⃣ Guardar en OpenKM PRIMERO
-        String comprobantePath = openKMService.uploadInvoice(new ByteArrayInputStream(fileBytes));
+        // 1️⃣ Extraer texto con Azure OCR (Vuelve a usar dto.file)
+        String extractedText = ocrService.extractText(dto.file);
 
-        // 2️⃣ Crear la entidad Factura en nuestra DB
-        factura newFactura = new factura();
-        newFactura.setComprobante(comprobantePath); // Asumo que tienes un setComprobante(String path)
-        facturaRepository.persist(newFactura);
-        // ¡Ya tenemos el nuevo facturaId! (newFactura.getFacturaId())
-
-        // 3️⃣ Extraer texto con Azure OCR (usando el segundo stream)
-        String extractedText = ocrService.extractText(new ByteArrayInputStream(fileBytes));
-
-        // 4️⃣ Obtener JSON estructurado desde Gemini
+        // 2️⃣ Obtener JSON estructurado desde Gemini
         String structuredJson = extractor.generateGastoJson(extractedText);
         JSONObject json = new JSONObject(structuredJson);
 
-        // 5️⃣ Validar y obtener las entidades necesarias
+        // 3️⃣ Validar y obtener las entidades necesarias (Vuelve a buscar factura por ID)
         moneda moneda = monedaRepository.findById(dto.monedaId);
-        // Ya no buscamos la factura, usamos la que acabamos de crear:
-        factura factura = newFactura; 
+        factura factura = facturaRepository.findById(dto.facturaId); // Restaurado
         recursoAsignado recurso = recursoAsignadoRepository.findById(dto.recursoId);
         tipoGasto tipoGasto = tipoGastoRepository.findById(dto.tipoGastoId);
         actividad actividad = actividadRepository.findById(dto.actividadId);
 
-        // Ya no necesitamos validar la factura
-        if (moneda == null || recurso == null || tipoGasto == null || actividad == null) {
-            throw new IllegalArgumentException("Alguna entidad relacionada no fue encontrada.");
-        }
-
+        // 4️⃣ Validar (Restaurado)
         if (moneda == null || factura == null || recurso == null || tipoGasto == null || actividad == null) {
             throw new IllegalArgumentException("Alguna entidad relacionada no fue encontrada.");
         }
 
-        // 4️⃣ Parsear fecha desde JSON Gemini
+        // 5️⃣ Parsear fecha desde JSON Gemini
         Date fechaGasto;
         try {
             LocalDate localDate = LocalDate.parse(json.getString("Fecha"), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -113,11 +93,11 @@ public class ServiceOCRGasto {
             throw new IllegalArgumentException("Fecha del JSON inválida: " + e.getMessage());
         }
 
-        // 5️⃣ Crear entidad gasto
+        // 6️⃣ Crear entidad gasto
         gasto nuevoGasto = new gasto();
         nuevoGasto.setFecha(fechaGasto);
         nuevoGasto.setMonedaGasto(moneda);
-        nuevoGasto.setFactura(factura);
+        nuevoGasto.setFactura(factura); // Usa la factura encontrada por ID
         nuevoGasto.setRecursoAsignado(recurso);
         nuevoGasto.setTipoGasto(tipoGasto);
         nuevoGasto.setActividad(actividad);
@@ -127,7 +107,7 @@ public class ServiceOCRGasto {
 
         gastoRepository.persist(nuevoGasto);
 
-        // 6️⃣ Retornar DTO
+        // 7️⃣ Retornar DTO
         return new GastoDTO(
             nuevoGasto.getGastoId(),
             json.getString("Fecha"),
@@ -141,9 +121,6 @@ public class ServiceOCRGasto {
             nuevoGasto.getTotalMonedaBase()
         );
     }
-    
-
-
 
 
 
