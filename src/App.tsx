@@ -50,6 +50,8 @@ const Unauthorized: React.FC = () => (
 
 const App: React.FC = () => {
   return (
+
+    
     <>
       {/* ✅ Toaster debe estar dentro de un fragment o componente raíz */}
       <Toaster
@@ -249,6 +251,7 @@ const App: React.FC = () => {
                 {/* ========== RUTA CATCH-ALL ==========
                     Redirige rutas no encontradas */}
                 <Route path="*" element={<Navigate to="/" replace />} />
+                
               </Routes>
             </main>
 
