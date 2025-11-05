@@ -35,15 +35,8 @@ import jakarta.persistence.EntityManager;
 
 import jakarta.transaction.Transactional;
 import jakarta.enterprise.context.ApplicationScoped;
-import java.time.format.DateTimeFormatter;
-
-
-
 
 import java.sql.*;
-
-
-
 
 
 

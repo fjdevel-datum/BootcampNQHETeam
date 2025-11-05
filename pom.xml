@@ -52,7 +52,7 @@
         </dependency>
 
 
-
+       
 
 
        
@@ -78,10 +78,10 @@
         </dependency>
 
         <!-- Test -->
-        <dependency>
+        <!--<dependency>
             <groupId>io.quarkiverse.googlecloudservices</groupId>
             <artifactId>quarkus-google-cloud-firestore</artifactId>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
@@ -153,6 +153,23 @@
         <artifactId>quarkus-resteasy</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-jackson</artifactId>
+        </dependency>
+        <!--<dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client</artifactId>
+        </dependency>-->
+        
+        <!-- Servidor REST Classic -->
+<!-- Cliente REST Classic -->
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-client</artifactId>
+</dependency>
+
+
         <!-- Firebase Auth-->
         <dependency>
             <groupId>com.google.firebase</groupId>
@@ -160,11 +177,7 @@
             <version>9.2.0</version>    
         </dependency>
 
-        <!--    GOOGLE STRORAGE-->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson</artifactId> 
-        </dependency>
+       
        
         <dependency>
             <groupId>com.google.api-client</groupId>

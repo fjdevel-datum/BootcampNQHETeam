@@ -25,6 +25,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import org.json.JSONObject;
 
+import com.easycheck.infrastructure.openkm.OpenKMService; // Importa tu nuevo servicio
+import java.io.ByteArrayInputStream; // Importa esto
+import java.io.IOException; // Importa esto
+
 @ApplicationScoped
 public class ServiceOCRGasto {
     
@@ -52,22 +56,49 @@ public class ServiceOCRGasto {
 
     @Inject
     ActividadRepository actividadRepository;
+    
+    @Inject
+    OpenKMService openKMService;
+    
 
-    public GastoDTO procesarFacturayGuardarGasto(OCRGastoRequestDTO dto)
+    public GastoDTO procesarFacturayGuardarGasto(OCRGastoRequestDTO dto) throws IOException
     {
-         // 1️⃣ Extraer texto con Azure OCR
-        String extractedText = ocrService.extractText(dto.file);
+        // ---------------------------------------------------------------------
+        //  Paso CRÍTICO: Leer el InputStream a un byte[]
+        //  Un InputStream solo se puede leer UNA VEZ. Como lo necesitamos 2 veces
+        //  (1 para OpenKM, 1 para OCR), lo pasamos a un array de bytes.
+        // ---------------------------------------------------------------------
+        byte[] fileBytes = dto.file.readAllBytes();
+        dto.file.close(); // Cerramos el stream original
 
-        // 2️⃣ Obtener JSON estructurado desde Gemini
+        // 1️⃣ Guardar en OpenKM PRIMERO
+        String comprobantePath = openKMService.uploadInvoice(new ByteArrayInputStream(fileBytes));
+
+        // 2️⃣ Crear la entidad Factura en nuestra DB
+        factura newFactura = new factura();
+        newFactura.setComprobante(comprobantePath); // Asumo que tienes un setComprobante(String path)
+        facturaRepository.persist(newFactura);
+        // ¡Ya tenemos el nuevo facturaId! (newFactura.getFacturaId())
+
+        // 3️⃣ Extraer texto con Azure OCR (usando el segundo stream)
+        String extractedText = ocrService.extractText(new ByteArrayInputStream(fileBytes));
+
+        // 4️⃣ Obtener JSON estructurado desde Gemini
         String structuredJson = extractor.generateGastoJson(extractedText);
         JSONObject json = new JSONObject(structuredJson);
 
-        // 3️⃣ Validar y obtener las entidades necesarias
+        // 5️⃣ Validar y obtener las entidades necesarias
         moneda moneda = monedaRepository.findById(dto.monedaId);
-        factura factura = facturaRepository.findById(dto.facturaId);
+        // Ya no buscamos la factura, usamos la que acabamos de crear:
+        factura factura = newFactura; 
         recursoAsignado recurso = recursoAsignadoRepository.findById(dto.recursoId);
         tipoGasto tipoGasto = tipoGastoRepository.findById(dto.tipoGastoId);
         actividad actividad = actividadRepository.findById(dto.actividadId);
+
+        // Ya no necesitamos validar la factura
+        if (moneda == null || recurso == null || tipoGasto == null || actividad == null) {
+            throw new IllegalArgumentException("Alguna entidad relacionada no fue encontrada.");
+        }
 
         if (moneda == null || factura == null || recurso == null || tipoGasto == null || actividad == null) {
             throw new IllegalArgumentException("Alguna entidad relacionada no fue encontrada.");
