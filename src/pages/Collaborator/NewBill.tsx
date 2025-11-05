@@ -17,13 +17,13 @@ interface GeminiData {
   Cantidad_Item: number;
 }
 
-interface LocationState {
+/*interface LocationState {
   draftId?: string;
   geminiData?: GeminiData;
   imageUrl?: string;
   actividadId?: string;
   facturaId?: string;
-}
+}*/
 
 interface OCRStorageData {
   draftId: string;
@@ -58,8 +58,8 @@ interface TipoGasto {
 
 const NewBill: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const state = location.state as LocationState;
+  //const location = useLocation();
+  //const state = location.state as LocationState;
 
   const [formData, setFormData] = useState({
     draftId: "",
@@ -117,9 +117,9 @@ const NewBill: React.FC = () => {
       }
     };
     loadCatalogs();
-  }, [apiUrl]);
+  }, [apiUrl, userData?.empleadoId]);
 
-  // 🔹 OCR
+  /*// 🔹 OCR
   useEffect(() => {
     if (state?.actividadId) {
       setFormData(prev => ({ ...prev, actividadId: state.actividadId! }));
@@ -142,7 +142,7 @@ const NewBill: React.FC = () => {
       }
       loadOCRData(ocrData.draftId, ocrData.geminiData, ocrData.imageUrl, ocrData.facturaId);
       if (ocrData.actividadId) {
-      setFormData(prev => ({ ...prev, facturaId: ocrData.facturaId!.toString() }));      }
+      setFormData(prev => ({ ...prev, actividadId: ocrData.actividadId!.toString() }));      }
       sessionStorage.removeItem('ocrData');
     }
   }, [state]);
@@ -157,16 +157,77 @@ const NewBill: React.FC = () => {
       totalGasto: monto,
       totalMonedaBase: monto,
       ...(facturaId && { facturaId: facturaId.toString() }),
+      ...(prev.actividadId && { actividadId: prev.actividadId }),
     }));
     if (imageUrl) setImagePreview(imageUrl);
     setFromOCR(true);
     toast.success("Datos cargados", "Información extraída del comprobante. Completa los campos necesarios.");
-  };
+  };*/
 
-  const handleGoBack = () => {
+ 
+
+// 🔹 Cargar catálogos (ESTO DÉJALO COMO ESTÁ, EN SU PROPIO useEffect)
+  useEffect(() => {
+    const loadCatalogs = async () => {
+      // ... tu código para cargar monedas, tarjetas, etc. ...
+    };
+    loadCatalogs();
+  }, [apiUrl, userData?.empleadoId]); // Asegúrate de incluir userData?.empleadoId si se usa dentro
+
+  // 🔹 Cargar datos del OCR (ESTE ES EL NUEVO useEffect)
+  useEffect(() => {
+    // 1. Cargar datos desde sessionStorage
+    const savedData = sessionStorage.getItem('ocrData');
+    
+    if (savedData) {
+      const ocrData: OCRStorageData = JSON.parse(savedData);
+      
+      // 2. Verificar si los datos expiraron
+      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+      if (ocrData.timestamp < fiveMinutesAgo) {
+        sessionStorage.removeItem('ocrData');
+        return; // Los datos son muy viejos, no los cargues
+      }
+
+      // 3. Obtener los datos de Gemini
+      const monto = ocrData.geminiData.Monto_Total?.toString() || "";
+
+      // 4. ACTUALIZAR EL ESTADO UNA SOLA VEZ
+      setFormData(prev => ({
+        ...prev,
+        draftId: ocrData.draftId,
+        descripcion: ocrData.geminiData.Descripcion_Item || "",
+        fecha: ocrData.geminiData.Fecha || "",
+        totalGasto: monto,
+        totalMonedaBase: monto,
+        
+        // ¡AQUÍ ESTÁ LA MAGIA!
+        // Leemos los IDs directamente desde ocrData
+        actividadId: ocrData.actividadId?.toString() || "", 
+        facturaId: ocrData.facturaId?.toString() || ""
+      }));
+
+      // 5. Mostrar la imagen y el toast
+      if (ocrData.imageUrl) setImagePreview(ocrData.imageUrl);
+      setFromOCR(true);
+      toast.success("Datos cargados", "Información extraída del comprobante. Completa los campos necesarios.");
+
+      // 6. Limpiar el storage
+      sessionStorage.removeItem('ocrData');
+    }
+  }, []); // <-- ¡El array de dependencias VACÍO es crucial!
+         // Esto asegura que el código se ejecute SOLO UNA VEZ cuando la página carga.
+
+
+   const handleGoBack = () => {
     sessionStorage.removeItem('ocrData');
     navigate(-1);
   };
+
+
+
+
+
 
   // 🔹 Convertir monto usando el endpoint del backend
   const convertirMoneda = async (monto: string, monedaId: string) => {

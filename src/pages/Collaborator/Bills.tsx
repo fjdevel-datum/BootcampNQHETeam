@@ -161,94 +161,125 @@ const Bills: React.FC = () => {
     }
 
     setLoading(true);
-    const loadingToast = toast.loading("Procesando comprobante con OCR...");
+    let loadingToastId: any = null;
 
     try {
-      console.log("🚀 Iniciando proceso OCR...");
+      console.log("🎬 INICIO handleApprove");
+      console.log("📸 capturedPhoto:", capturedPhoto?.substring(0, 50));
+      
+      loadingToastId = toast.loading("Procesando imagen...");
+      console.log("🔔 Toast mostrado");
 
+      console.log("🔄 Convirtiendo a blob...");
       const blob = await fetch(capturedPhoto).then((r) => r.blob());
-      const formData = new FormData();
-      formData.append("file", blob, "comprobante.jpg");
+      console.log("✅ Blob creado:", blob.size, "bytes", blob.type);
 
-      console.log("📤 Enviando solicitud al backend...");
+      if (blob.size === 0) {
+        throw new Error("La imagen está vacía");
+      }
 
       const token = localStorage.getItem('token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      console.log("🔑 Token:", token ? "✅ Existe" : "❌ No existe");
 
-      const facturaResponse = await fetch(`${apiUrl}/factura/upload`, {
-        method: "POST",
-        headers: headers,
-        body: formData,
-      });
+      const headers: HeadersInit = token 
+        ? { 'Authorization': `Bearer ${token}` }
+        : {};
 
-      if(!facturaResponse.ok) {
+      // 🔹 Crear FormData separados para cada llamada
+      const formData1 = new FormData();
+      formData1.append("file", blob, "comprobante.jpg");
+      console.log("📦 FormData1 creado para factura");
+
+      const formData2 = new FormData();
+      formData2.append("file", blob, "comprobante.jpg");
+      console.log("📦 FormData2 creado para OCR");
+
+      console.log("🚀 Ejecutando AMBAS llamadas en paralelo...");
+      console.log("URL Factura:", `${apiUrl}/factura/upload`);
+      console.log("URL OCR:", `${apiUrl}/ocr2/extract2`);
+
+      // 🔹 EJECUTAR AMBAS EN PARALELO
+      const [facturaResponse, ocrResponse] = await Promise.all([
+        fetch(`${apiUrl}/factura/upload`, {
+          method: "POST",
+          headers: headers,
+          body: formData1,
+        }),
+        fetch(`${apiUrl}/ocr2/extract2`, {
+          method: "POST",
+          headers: headers,
+          body: formData2,
+        })
+      ]);
+
+      console.log("✅ Respuesta Factura status:", facturaResponse.status);
+      console.log("✅ Respuesta OCR status:", ocrResponse.status);
+
+      // 🔹 Procesar respuesta de factura
+      if (!facturaResponse.ok) {
         const errorText = await facturaResponse.text();
-        console.error("❌ Error del servidor:", errorText);
-        throw new Error(`Error ${facturaResponse.status}: ${errorText}`);
+        console.error("❌ Error factura:", errorText);
+        throw new Error(`Error al subir factura (${facturaResponse.status}): ${errorText}`);
       }
+
       const facturaData: FacturaResponse = await facturaResponse.json();
-      console.log("✅ Factura ID obtenida:", facturaData.facturaId);
+      console.log("✅ Factura creada exitosamente!");
+      console.log("🆔 Factura ID:", facturaData.facturaId);
 
-      toast.dismiss(loadingToast);
-      const ocrLoading = toast.loading("Extrayendo datos con OCR...");
-      const response = await fetch(`${apiUrl}/ocr2/extract2`, {
-        method: "POST",
-        headers: headers,
-        body: formData,
-      });
-
-      console.log("📥 Respuesta recibida, status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Error del servidor:", errorText);
-        throw new Error(`Error ${response.status}: ${errorText}`);
+      // 🔹 Procesar respuesta de OCR
+      if (!ocrResponse.ok) {
+        const errorText = await ocrResponse.text();
+        console.error("❌ Error OCR:", errorText);
+        throw new Error(`Error en OCR (${ocrResponse.status}): ${errorText}`);
       }
 
-      const responseText = await response.text();
-      console.log("📄 Respuesta raw del servidor:", responseText);
+      const ocrData: OCRResponse = await ocrResponse.json();
+      console.log("✅ OCR procesado exitosamente!");
+      console.log("🎫 Draft ID:", ocrData.draftId);
+      console.log("📊 Gemini Data:", ocrData.geminiData);
 
-      const data: OCRResponse = JSON.parse(responseText);
-      console.log("✅ JSON parseado exitosamente:", data);
-
-      if (!data.draftId || !data.geminiData) {
-        throw new Error("Respuesta incompleta del servidor");
+      if (!ocrData.draftId || !ocrData.geminiData) {
+        throw new Error("Respuesta incompleta del servidor OCR");
       }
 
-      console.log("✅ Datos validados correctamente");
-      console.log("🎫 Draft ID:", data.draftId);
-      console.log("📊 Gemini Data:", data.geminiData);
-
-      const ocrData = {
-        draftId: data.draftId,
-        geminiData: data.geminiData,
+      // 🔹 Guardar TODO en sessionStorage
+      const dataToSave = {
+        draftId: ocrData.draftId,
+        geminiData: ocrData.geminiData,
         imageUrl: capturedPhoto,
         timestamp: Date.now(),
         actividadId: id,
         facturaId: facturaData.facturaId
       };
       
-      sessionStorage.setItem('ocrData', JSON.stringify(ocrData));
+      sessionStorage.setItem('ocrData', JSON.stringify(dataToSave));
       console.log("💾 Datos guardados en sessionStorage");
 
-      toast.dismiss(loadingToast);
-      toast.success("OCR completado", "Revisa y confirma los datos extraídos");
+      if (loadingToastId) toast.dismiss(loadingToastId);
+      toast.success("Proceso completado", "Factura y OCR procesados correctamente");
+
+      // Limpiar URL blob
+      if (capturedPhoto?.startsWith("blob:")) {
+        alert('no se borra la imagen')
+        // URL.revokeObjectURL(capturedPhoto);
+      }
 
       console.log("🔄 Navegando a NewBill...");
+      
       navigate("/NewBill", {
         state: {
-          actividadId: id
+          actividadId: id,
+          facturaId: facturaData.facturaId
         }
       });
 
     } catch (err) {
-      console.error("❌ Error completo:", err);
-      toast.dismiss(loadingToast);
+      console.error("❌ ERROR CAPTURADO:", err);
+      console.error("❌ Error stack:", err instanceof Error ? err.stack : 'No stack');
+      
+      if (loadingToastId) toast.dismiss(loadingToastId);
       toast.error(
-        "Error en OCR", 
+        "Error en proceso", 
         err instanceof Error ? err.message : "No se pudo procesar la imagen"
       );
     } finally {
