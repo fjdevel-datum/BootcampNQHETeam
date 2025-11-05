@@ -26,6 +26,10 @@ interface OCRResponse {
   geminiData: GeminiData;
 }
 
+interface FacturaResponse {
+  facturaId: number;
+}
+
 const Bills: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -174,6 +178,22 @@ const Bills: React.FC = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      const facturaResponse = await fetch(`${apiUrl}/factura/upload`, {
+        method: "POST",
+        headers: headers,
+        body: formData,
+      });
+
+      if(!facturaResponse.ok) {
+        const errorText = await facturaResponse.text();
+        console.error("❌ Error del servidor:", errorText);
+        throw new Error(`Error ${facturaResponse.status}: ${errorText}`);
+      }
+      const facturaData: FacturaResponse = await facturaResponse.json();
+      console.log("✅ Factura ID obtenida:", facturaData.facturaId);
+
+      toast.dismiss(loadingToast);
+      const ocrLoading = toast.loading("Extrayendo datos con OCR...");
       const response = await fetch(`${apiUrl}/ocr2/extract2`, {
         method: "POST",
         headers: headers,
@@ -207,7 +227,8 @@ const Bills: React.FC = () => {
         geminiData: data.geminiData,
         imageUrl: capturedPhoto,
         timestamp: Date.now(),
-        actividadId: id
+        actividadId: id,
+        facturaId: facturaData.facturaId
       };
       
       sessionStorage.setItem('ocrData', JSON.stringify(ocrData));

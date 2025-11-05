@@ -22,6 +22,7 @@ interface LocationState {
   geminiData?: GeminiData;
   imageUrl?: string;
   actividadId?: string;
+  facturaId?: string;
 }
 
 interface OCRStorageData {
@@ -30,6 +31,7 @@ interface OCRStorageData {
   imageUrl: string | null;
   timestamp: number;
   actividadId?: string;
+  facturaId?: number;
 }
 
 interface Moneda {
@@ -70,6 +72,7 @@ const NewBill: React.FC = () => {
     tarjetaId: "",
     recursoId: "",
     tipoGastoId: "",
+    facturaId: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -121,6 +124,10 @@ const NewBill: React.FC = () => {
     if (state?.actividadId) {
       setFormData(prev => ({ ...prev, actividadId: state.actividadId! }));
     }
+     if (state?.facturaId) {
+      console.log("🆔 Factura ID recibido desde state:", state.facturaId);
+      setFormData(prev => ({ ...prev, facturaId: state.facturaId!.toString() }));
+    }
     if (state?.draftId && state?.geminiData) {
       loadOCRData(state.draftId, state.geminiData, state.imageUrl);
       return;
@@ -133,15 +140,14 @@ const NewBill: React.FC = () => {
         sessionStorage.removeItem('ocrData');
         return;
       }
-      loadOCRData(ocrData.draftId, ocrData.geminiData, ocrData.imageUrl);
+      loadOCRData(ocrData.draftId, ocrData.geminiData, ocrData.imageUrl, ocrData.facturaId);
       if (ocrData.actividadId) {
-        setFormData(prev => ({ ...prev, actividadId: ocrData.actividadId! }));
-      }
+      setFormData(prev => ({ ...prev, facturaId: ocrData.facturaId!.toString() }));      }
       sessionStorage.removeItem('ocrData');
     }
   }, [state]);
 
-  const loadOCRData = (draftId: string, geminiData: GeminiData, imageUrl?: string | null) => {
+  const loadOCRData = (draftId: string, geminiData: GeminiData, imageUrl?: string | null, facturaId?: number) => {
     const monto = geminiData.Monto_Total?.toString() || "";
     setFormData(prev => ({
       ...prev,
@@ -150,6 +156,7 @@ const NewBill: React.FC = () => {
       fecha: geminiData.Fecha || "",
       totalGasto: monto,
       totalMonedaBase: monto,
+      ...(facturaId && { facturaId: facturaId.toString() }),
     }));
     if (imageUrl) setImagePreview(imageUrl);
     setFromOCR(true);
@@ -268,7 +275,7 @@ const NewBill: React.FC = () => {
     if (!formData.tipoGastoId) return toast.error("Campo requerido", "Selecciona un tipo de gasto");
     if (!formData.actividadId) return toast.error("Error", "No se pudo identificar la actividad asociada");
     if (!formData.draftId) return toast.error("Error", "No hay draftId. Debes escanear un comprobante primero.");
-
+    if (!formData.facturaId) return toast.error("Error", "No hay facturaId. Debes escanear un comprobante primero.");
     setLoading(true);
     const loadingToast = toast.loading("Guardando gasto...");
 
@@ -280,6 +287,7 @@ const NewBill: React.FC = () => {
         tipoGastoId: parseInt(formData.tipoGastoId),
         actividadId: parseInt(formData.actividadId),
         totalMonedaBase: parseFloat(formData.totalMonedaBase),
+        facturaId: parseInt(formData.facturaId!),
       };
 
       console.log("📤 Enviando DTO al backend:", gastoDraftDTO);
