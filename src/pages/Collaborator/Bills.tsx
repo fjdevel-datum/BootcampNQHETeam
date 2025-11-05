@@ -179,17 +179,17 @@ const Bills: React.FC = () => {
 
     try {
       console.log("🎬 INICIO handleApprove");
-      console.log("📄 Tipo de archivo:", fileType);
+      console.log("📸 capturedPhoto:", capturedPhoto?.substring(0, 50));
       
-      loadingToastId = toast.loading("Procesando archivo...");
+      loadingToastId = toast.loading("Procesando imagen...");
+      console.log("🔔 Toast mostrado");
 
-      // 🔹 Convertir base64 a blob
-      console.log("🔄 Convirtiendo base64 a blob...");
+      console.log("🔄 Convirtiendo a blob...");
       const blob = await fetch(capturedPhoto).then((r) => r.blob());
       console.log("✅ Blob creado:", blob.size, "bytes", blob.type);
 
       if (blob.size === 0) {
-        throw new Error("El archivo está vacío");
+        throw new Error("La imagen está vacía");
       }
 
       const token = localStorage.getItem('token');
@@ -199,18 +199,18 @@ const Bills: React.FC = () => {
         ? { 'Authorization': `Bearer ${token}` }
         : {};
 
-      // 🔹 Determinar el nombre del archivo según el tipo
-      const fileName = fileType === 'pdf' ? "comprobante.pdf" : "comprobante.jpg";
-      
       // 🔹 Crear FormData separados para cada llamada
       const formData1 = new FormData();
-      formData1.append("file", blob, fileName);
+      formData1.append("file", blob, "comprobante.jpg");
+      console.log("📦 FormData1 creado para factura");
 
       const formData2 = new FormData();
-      formData2.append("file", blob, fileName);
+      formData2.append("file", blob, "comprobante.jpg");
+      console.log("📦 FormData2 creado para OCR");
 
       console.log("🚀 Ejecutando AMBAS llamadas en paralelo...");
-      console.log("📁 Nombre de archivo:", fileName);
+      console.log("URL Factura:", `${apiUrl}/factura/upload`);
+      console.log("URL OCR:", `${apiUrl}/ocr2/extract2`);
 
       // 🔹 EJECUTAR AMBAS EN PARALELO
       const [facturaResponse, ocrResponse] = await Promise.all([
@@ -256,33 +256,34 @@ const Bills: React.FC = () => {
         throw new Error("Respuesta incompleta del servidor OCR");
       }
 
-      // 🔹 Guardar TODO en sessionStorage (ya está en base64)
+      // 🔹 Guardar TODO en sessionStorage
       const dataToSave = {
         draftId: ocrData.draftId,
         geminiData: ocrData.geminiData,
-        imageUrl: capturedPhoto, // Ya es base64, funciona para todo
-        fileType: fileType,
+        imageUrl: capturedPhoto,
         timestamp: Date.now(),
         actividadId: id,
         facturaId: facturaData.facturaId
       };
       
       sessionStorage.setItem('ocrData', JSON.stringify(dataToSave));
-      console.log("💾 Datos guardados en sessionStorage (base64)");
+      console.log("💾 Datos guardados en sessionStorage");
 
       if (loadingToastId) toast.dismiss(loadingToastId);
       toast.success("Proceso completado", "Factura y OCR procesados correctamente");
+
+      // Limpiar URL blob
+      if (capturedPhoto?.startsWith("blob:")) {
+        alert('no se borra la imagen')
+        // URL.revokeObjectURL(capturedPhoto);
+      }
 
       console.log("🔄 Navegando a NewBill...");
       
       navigate("/NewBill", {
         state: {
           actividadId: id,
-          facturaId: facturaData.facturaId,
-          draftId: ocrData.draftId,
-          geminiData: ocrData.geminiData,
-          imageUrl: capturedPhoto,
-          fileType: fileType
+          facturaId: facturaData.facturaId
         }
       });
 
@@ -293,7 +294,7 @@ const Bills: React.FC = () => {
       if (loadingToastId) toast.dismiss(loadingToastId);
       toast.error(
         "Error en proceso", 
-        err instanceof Error ? err.message : "No se pudo procesar el archivo"
+        err instanceof Error ? err.message : "No se pudo procesar la imagen"
       );
     } finally {
       setLoading(false);
