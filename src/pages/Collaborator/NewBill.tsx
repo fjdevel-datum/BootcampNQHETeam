@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft, Receipt, Calendar, DollarSign,
   Sparkles, Image as ImageIcon, Loader2,
-  Coins, CreditCard, Tag
+  Coins, CreditCard, Tag, FileText
 } from "lucide-react";
 import { toast } from "../../components/toast";
 import { fetchWithAuth, getCurrentUserData } from "../../services/authService";
@@ -21,6 +21,7 @@ interface LocationState {
   draftId?: string;
   geminiData?: GeminiData;
   imageUrl?: string;
+  fileType?: 'image' | 'pdf';
   actividadId?: string;
   facturaId?: string;
 }
@@ -29,6 +30,7 @@ interface OCRStorageData {
   draftId: string;
   geminiData: GeminiData;
   imageUrl: string | null;
+  fileType?: 'image' | 'pdf';
   timestamp: number;
   actividadId?: string;
   facturaId?: number;
@@ -79,6 +81,7 @@ const NewBill: React.FC = () => {
   const [loadingData, setLoadingData] = useState(true);
   const [loadingConversion, setLoadingConversion] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<'image' | 'pdf' | null>(null);
   const [fromOCR, setFromOCR] = useState(false);
 
   const [monedas, setMonedas] = useState<Moneda[]>([]);
@@ -119,36 +122,94 @@ const NewBill: React.FC = () => {
     loadCatalogs();
   }, [apiUrl]);
 
-  // 🔹 OCR
+  // 🔹 OCR - Cargar datos desde state o sessionStorage
   useEffect(() => {
+    console.log("🔍 useEffect ejecutándose");
+    console.log("📦 state:", state);
+    
+    // 1️⃣ Establecer actividadId desde state si existe
     if (state?.actividadId) {
+      console.log("✅ Estableciendo actividadId desde state:", state.actividadId);
       setFormData(prev => ({ ...prev, actividadId: state.actividadId! }));
     }
-     if (state?.facturaId) {
+    
+    // 2️⃣ Establecer facturaId desde state si existe
+    if (state?.facturaId) {
       console.log("🆔 Factura ID recibido desde state:", state.facturaId);
       setFormData(prev => ({ ...prev, facturaId: state.facturaId!.toString() }));
     }
+    
+    // 3️⃣ Cargar datos OCR desde state (prioridad alta)
     if (state?.draftId && state?.geminiData) {
-      loadOCRData(state.draftId, state.geminiData, state.imageUrl);
+      console.log("✅ Cargando datos desde navigation state");
+      loadOCRData(
+        state.draftId, 
+        state.geminiData, 
+        state.imageUrl, 
+        state.facturaId, 
+        state.fileType
+      );
       return;
     }
+    
+    // 4️⃣ Fallback: Cargar desde sessionStorage
     const savedData = sessionStorage.getItem('ocrData');
     if (savedData) {
-      const ocrData: OCRStorageData = JSON.parse(savedData);
-      const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-      if (ocrData.timestamp < fiveMinutesAgo) {
+      console.log("📂 Cargando datos desde sessionStorage");
+      try {
+        const ocrData: OCRStorageData = JSON.parse(savedData);
+        
+        // Validar que no haya expirado (5 minutos)
+        const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+        if (ocrData.timestamp < fiveMinutesAgo) {
+          console.log("⏱️ Datos expirados, limpiando sessionStorage");
+          sessionStorage.removeItem('ocrData');
+          return;
+        }
+        
+        loadOCRData(
+          ocrData.draftId, 
+          ocrData.geminiData, 
+          ocrData.imageUrl, 
+          ocrData.facturaId,
+          ocrData.fileType
+        );
+        
+        if (ocrData.actividadId) {
+          setFormData(prev => ({ 
+            ...prev, 
+            actividadId: ocrData.actividadId!.toString() 
+          }));
+        }
+        
         sessionStorage.removeItem('ocrData');
-        return;
+        console.log("🗑️ sessionStorage limpiado");
+        
+      } catch (error) {
+        console.error("❌ Error al parsear sessionStorage:", error);
+        sessionStorage.removeItem('ocrData');
       }
-      loadOCRData(ocrData.draftId, ocrData.geminiData, ocrData.imageUrl, ocrData.facturaId);
-      if (ocrData.actividadId) {
-      setFormData(prev => ({ ...prev, facturaId: ocrData.facturaId!.toString() }));      }
-      sessionStorage.removeItem('ocrData');
+    } else {
+      console.log("ℹ️ No hay datos en sessionStorage ni state");
     }
   }, [state]);
 
-  const loadOCRData = (draftId: string, geminiData: GeminiData, imageUrl?: string | null, facturaId?: number) => {
+  const loadOCRData = (
+    draftId: string, 
+    geminiData: GeminiData, 
+    imageUrl?: string | null, 
+    facturaId?: number | string,
+    type?: 'image' | 'pdf'
+  ) => {
+    console.log("📥 loadOCRData ejecutándose");
+    console.log("🎫 draftId:", draftId);
+    console.log("📊 geminiData:", geminiData);
+    console.log("🖼️ imageUrl:", imageUrl ? `${imageUrl.substring(0, 50)}...` : "null");
+    console.log("🆔 facturaId:", facturaId);
+    console.log("📄 fileType:", type);
+    
     const monto = geminiData.Monto_Total?.toString() || "";
+    
     setFormData(prev => ({
       ...prev,
       draftId,
@@ -158,7 +219,15 @@ const NewBill: React.FC = () => {
       totalMonedaBase: monto,
       ...(facturaId && { facturaId: facturaId.toString() }),
     }));
-    if (imageUrl) setImagePreview(imageUrl);
+    
+    if (imageUrl) {
+      console.log("✅ Estableciendo imagePreview");
+      setImagePreview(imageUrl);
+      setFileType(type || 'image');
+    } else {
+      console.log("⚠️ No hay imageUrl para establecer");
+    }
+    
     setFromOCR(true);
     toast.success("Datos cargados", "Información extraída del comprobante. Completa los campos necesarios.");
   };
@@ -197,12 +266,10 @@ const NewBill: React.FC = () => {
         }));
         console.log(`💰 Conversión: ${monto} ${monedaSeleccionada.codigoISO} = ${response.montoMonedaBase.toFixed(2)} USD`);
       } else {
-        // Si no hay conversión, usar el monto original
         setFormData(prev => ({ ...prev, totalMonedaBase: monto }));
       }
     } catch (error) {
       console.error("❌ Error al convertir moneda:", error);
-      // En caso de error, mantener el monto original
       setFormData(prev => ({ ...prev, totalMonedaBase: monto }));
       toast.warning("Conversión no disponible", "Se usará el monto original");
     } finally {
@@ -210,13 +277,11 @@ const NewBill: React.FC = () => {
     }
   };
 
-  // 🔹 Manejar cambio de monto
   const handleTotalGastoChange = (value: string) => {
     if (!/^\d*\.?\d{0,2}$/.test(value)) return;
     
     setFormData(prev => ({ ...prev, totalGasto: value }));
     
-    // Convertir automáticamente si hay moneda seleccionada
     if (formData.monedaId && value) {
       convertirMoneda(value, formData.monedaId);
     } else {
@@ -224,11 +289,9 @@ const NewBill: React.FC = () => {
     }
   };
 
-  // 🔹 Manejar cambio de moneda
   const handleMonedaChange = (monedaId: string) => {
     setFormData(prev => ({ ...prev, monedaId }));
     
-    // Reconvertir el monto existente con la nueva moneda
     if (formData.totalGasto) {
       convertirMoneda(formData.totalGasto, monedaId);
     }
@@ -266,16 +329,51 @@ const NewBill: React.FC = () => {
   };
 
   const handleGuardar = async () => {
-    if (!formData.descripcion.trim()) return toast.error("Campo requerido", "Por favor ingresa la descripción del gasto");
-    if (!formData.fecha) return toast.error("Campo requerido", "Selecciona la fecha del gasto");
-    if (!formData.totalGasto || parseFloat(formData.totalGasto) <= 0) return toast.error("Monto inválido", "El monto debe ser mayor a 0");
-    if (!formData.monedaId) return toast.error("Campo requerido", "Selecciona una moneda");
-    if (!formData.tarjetaId) return toast.error("Campo requerido", "Selecciona una tarjeta");
-    if (!formData.recursoId) return toast.error("Error", "No se pudo obtener el recurso asociado a la tarjeta");
-    if (!formData.tipoGastoId) return toast.error("Campo requerido", "Selecciona un tipo de gasto");
-    if (!formData.actividadId) return toast.error("Error", "No se pudo identificar la actividad asociada");
-    if (!formData.draftId) return toast.error("Error", "No hay draftId. Debes escanear un comprobante primero.");
-    if (!formData.facturaId) return toast.error("Error", "No hay facturaId. Debes escanear un comprobante primero.");
+    if (!formData.descripcion.trim()) {
+      toast.error("Campo requerido", "Por favor ingresa la descripción del gasto");
+      return;
+    }
+    if (!formData.fecha) {
+      toast.error("Campo requerido", "Selecciona la fecha del gasto");
+      return;
+    }
+    if (!formData.totalGasto || parseFloat(formData.totalGasto) <= 0) {
+      toast.error("Monto inválido", "El monto debe ser mayor a 0");
+      return;
+    }
+    if (!formData.totalMonedaBase || parseFloat(formData.totalMonedaBase) <= 0) {
+      toast.error("Error conversión", "El monto en moneda base debe ser mayor a 0");
+      return;
+    }
+    if (!formData.monedaId) {
+      toast.error("Campo requerido", "Selecciona una moneda");
+      return;
+    }
+    if (!formData.tarjetaId) {
+      toast.error("Campo requerido", "Selecciona una tarjeta");
+      return;
+    }
+    if (!formData.recursoId) {
+      toast.error("Error", "No se pudo obtener el recurso asociado a la tarjeta");
+      return;
+    }
+    if (!formData.tipoGastoId) {
+      toast.error("Campo requerido", "Selecciona un tipo de gasto");
+      return;
+    }
+    if (!formData.actividadId) {
+      toast.error("Error", "No se pudo identificar la actividad asociada");
+      return;
+    }
+    if (!formData.draftId) {
+      toast.error("Error", "No hay draftId. Debes escanear un comprobante primero.");
+      return;
+    }
+    if (!formData.facturaId) {
+      toast.error("Error", "No hay facturaId. Debes escanear un comprobante primero.");
+      return;
+    }
+
     setLoading(true);
     const loadingToast = toast.loading("Guardando gasto...");
 
@@ -287,7 +385,7 @@ const NewBill: React.FC = () => {
         tipoGastoId: parseInt(formData.tipoGastoId),
         actividadId: parseInt(formData.actividadId),
         totalMonedaBase: parseFloat(formData.totalMonedaBase),
-        facturaId: parseInt(formData.facturaId!),
+        facturaId: parseInt(formData.facturaId),
       };
 
       console.log("📤 Enviando DTO al backend:", gastoDraftDTO);
@@ -305,21 +403,29 @@ const NewBill: React.FC = () => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error("❌ Error del servidor:", errorText);
-        throw new Error(errorText);
+        throw new Error(errorText || "Error al guardar el gasto");
       }
 
       const savedGasto = await response.json();
       console.log("✅ Gasto guardado exitosamente:", savedGasto);
 
       toast.dismiss(loadingToast);
-      toast.success("Gasto registrado", `${formData.descripcion} - $${parseFloat(formData.totalGasto).toFixed(2)}`);
+      toast.success(
+        "Gasto registrado", 
+        `${formData.descripcion} - $${parseFloat(formData.totalGasto).toFixed(2)}`
+      );
+
+      sessionStorage.removeItem('ocrData');
 
       setTimeout(() => navigate(-1), 1000);
 
     } catch (err) {
       console.error("❌ Error al guardar:", err);
       toast.dismiss(loadingToast);
-      toast.error("Error al guardar", err instanceof Error ? err.message : "No se pudo guardar el gasto");
+      toast.error(
+        "Error al guardar", 
+        err instanceof Error ? err.message : "No se pudo guardar el gasto"
+      );
     } finally {
       setLoading(false);
     }
@@ -354,22 +460,37 @@ const NewBill: React.FC = () => {
 
       {/* Contenido */}
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Vista previa de la imagen */}
+        {/* Vista previa del archivo */}
         {imagePreview && (
           <div className="bg-white shadow-lg rounded-2xl p-6 mb-6">
             <div className="flex items-center gap-2 mb-3">
-              <ImageIcon className="w-5 h-5 text-button" />
-              <h3 className="font-semibold text-gray-700">Comprobante Escaneado</h3>
+              {fileType === 'pdf' ? (
+                <FileText className="w-5 h-5 text-red-600" />
+              ) : (
+                <ImageIcon className="w-5 h-5 text-button" />
+              )}
+              <h3 className="font-semibold text-gray-700">
+                {fileType === 'pdf' ? 'Comprobante PDF' : 'Comprobante Escaneado'}
+              </h3>
             </div>
-            <img 
-              src={imagePreview} 
-              alt="Comprobante" 
-              className="w-full max-h-64 object-contain rounded-lg bg-gray-100"
-            />
+            
+            {fileType === 'pdf' ? (
+              <div className="w-full rounded-lg bg-gray-100 p-8 flex flex-col items-center justify-center min-h-64">
+                <FileText className="w-16 h-16 text-red-600 mb-4" />
+                <p className="text-gray-700 font-semibold">Archivo PDF adjuntado</p>
+                <p className="text-gray-500 text-sm mt-2">El PDF fue procesado correctamente</p>
+              </div>
+            ) : (
+              <img 
+                src={imagePreview} 
+                alt="Comprobante" 
+                className="w-full max-h-64 object-contain rounded-lg bg-gray-100"
+              />
+            )}
           </div>
         )}
 
-        {/* Loading state */}
+        {/* Resto del formulario... (igual que antes) */}
         {loadingData ? (
           <div className="bg-white shadow-lg rounded-2xl p-12 flex flex-col items-center justify-center">
             <Loader2 className="w-12 h-12 text-button animate-spin mb-4" />
@@ -571,7 +692,8 @@ const NewBill: React.FC = () => {
               <div>
                 <h4 className="font-semibold text-green-900 mb-1">✅ Datos Extraídos con OCR</h4>
                 <p className="text-sm text-green-700">
-                  La información fue extraída automáticamente. Selecciona las opciones necesarias para guardar.
+                  La información fue extraída automáticamente del comprobante escaneado.
+                  Revisa y completa los campos necesarios antes de guardar el gasto.
                 </p>
               </div>
             </div>

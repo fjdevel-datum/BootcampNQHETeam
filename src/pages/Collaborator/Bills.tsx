@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Camera, Paperclip, X, Check, RotateCcw, ArrowLeft, Loader2 } from "lucide-react";
+import { Camera, Paperclip, X, Check, RotateCcw, ArrowLeft, Loader2, FileText } from "lucide-react";
 import { toast } from "../../components/toast";
 import BillCard from "../../components/BillCard";
 import { fetchWithAuth } from "../../services/authService";
@@ -37,6 +37,7 @@ const Bills: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loadingExpenses, setLoadingExpenses] = useState(true);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<'image' | 'pdf' | null>(null);
   const [showApproval, setShowApproval] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +50,6 @@ const Bills: React.FC = () => {
 
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
-  // 🔹 Cargar gastos reales de la actividad
   useEffect(() => {
     const loadExpenses = async () => {
       if (!id) {
@@ -110,10 +110,22 @@ const Bills: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      setCapturedPhoto(url);
-      setShowApproval(true);
-      toast.success("Archivo cargado", "Revisa la imagen antes de aprobar");
+      const isPDF = file.type === 'application/pdf';
+      
+      console.log("📄 Archivo seleccionado:", file.name, file.type);
+      
+      setFileType(isPDF ? 'pdf' : 'image');
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCapturedPhoto(reader.result as string);
+        setShowApproval(true);
+        toast.success(
+          isPDF ? "PDF cargado" : "Archivo cargado", 
+          "Revisa el archivo antes de aprobar"
+        );
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -139,7 +151,9 @@ const Bills: React.FC = () => {
         canvasRef.current.width = video.videoWidth;
         canvasRef.current.height = video.videoHeight;
         ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-        setCapturedPhoto(canvasRef.current.toDataURL("image/jpeg", 0.8));
+        const imageData = canvasRef.current.toDataURL("image/jpeg", 0.8);
+        setCapturedPhoto(imageData);
+        setFileType('image');
         setShowApproval(true);
         setShowCamera(false);
         toast.success("Foto capturada", "Revisa la imagen antes de aprobar");
@@ -156,111 +170,144 @@ const Bills: React.FC = () => {
 
   const handleApprove = async () => {
     if (!capturedPhoto) {
-      toast.error("Error", "No hay foto capturada");
+      toast.error("Error", "No hay archivo capturado");
       return;
     }
 
     setLoading(true);
-    const loadingToast = toast.loading("Procesando comprobante con OCR...");
+    let loadingToastId: any = null;
 
     try {
-      console.log("🚀 Iniciando proceso OCR...");
+      console.log("🎬 INICIO handleApprove");
+      console.log("📄 Tipo de archivo:", fileType);
+      
+      loadingToastId = toast.loading("Procesando archivo...");
 
+      // 🔹 Convertir base64 a blob
+      console.log("🔄 Convirtiendo base64 a blob...");
       const blob = await fetch(capturedPhoto).then((r) => r.blob());
-      const formData = new FormData();
-      formData.append("file", blob, "comprobante.jpg");
+      console.log("✅ Blob creado:", blob.size, "bytes", blob.type);
 
-      console.log("📤 Enviando solicitud al backend...");
+      if (blob.size === 0) {
+        throw new Error("El archivo está vacío");
+      }
 
       const token = localStorage.getItem('token');
-      const headers: HeadersInit = {};
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+      console.log("🔑 Token:", token ? "✅ Existe" : "❌ No existe");
 
-      const facturaResponse = await fetch(`${apiUrl}/factura/upload`, {
-        method: "POST",
-        headers: headers,
-        body: formData,
-      });
+      const headers: HeadersInit = token 
+        ? { 'Authorization': `Bearer ${token}` }
+        : {};
 
-      if(!facturaResponse.ok) {
+      // 🔹 Determinar el nombre del archivo según el tipo
+      const fileName = fileType === 'pdf' ? "comprobante.pdf" : "comprobante.jpg";
+      
+      // 🔹 Crear FormData separados para cada llamada
+      const formData1 = new FormData();
+      formData1.append("file", blob, fileName);
+
+      const formData2 = new FormData();
+      formData2.append("file", blob, fileName);
+
+      console.log("🚀 Ejecutando AMBAS llamadas en paralelo...");
+      console.log("📁 Nombre de archivo:", fileName);
+
+      // 🔹 EJECUTAR AMBAS EN PARALELO
+      const [facturaResponse, ocrResponse] = await Promise.all([
+        fetch(`${apiUrl}/factura/upload`, {
+          method: "POST",
+          headers: headers,
+          body: formData1,
+        }),
+        fetch(`${apiUrl}/ocr2/extract2`, {
+          method: "POST",
+          headers: headers,
+          body: formData2,
+        })
+      ]);
+
+      console.log("✅ Respuesta Factura status:", facturaResponse.status);
+      console.log("✅ Respuesta OCR status:", ocrResponse.status);
+
+      // 🔹 Procesar respuesta de factura
+      if (!facturaResponse.ok) {
         const errorText = await facturaResponse.text();
-        console.error("❌ Error del servidor:", errorText);
-        throw new Error(`Error ${facturaResponse.status}: ${errorText}`);
+        console.error("❌ Error factura:", errorText);
+        throw new Error(`Error al subir factura (${facturaResponse.status}): ${errorText}`);
       }
+
       const facturaData: FacturaResponse = await facturaResponse.json();
-      console.log("✅ Factura ID obtenida:", facturaData.facturaId);
+      console.log("✅ Factura creada exitosamente!");
+      console.log("🆔 Factura ID:", facturaData.facturaId);
 
-      toast.dismiss(loadingToast);
-      const ocrLoading = toast.loading("Extrayendo datos con OCR...");
-      const response = await fetch(`${apiUrl}/ocr2/extract2`, {
-        method: "POST",
-        headers: headers,
-        body: formData,
-      });
-
-      console.log("📥 Respuesta recibida, status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Error del servidor:", errorText);
-        throw new Error(`Error ${response.status}: ${errorText}`);
+      // 🔹 Procesar respuesta de OCR
+      if (!ocrResponse.ok) {
+        const errorText = await ocrResponse.text();
+        console.error("❌ Error OCR:", errorText);
+        throw new Error(`Error en OCR (${ocrResponse.status}): ${errorText}`);
       }
 
-      const responseText = await response.text();
-      console.log("📄 Respuesta raw del servidor:", responseText);
+      const ocrData: OCRResponse = await ocrResponse.json();
+      console.log("✅ OCR procesado exitosamente!");
+      console.log("🎫 Draft ID:", ocrData.draftId);
+      console.log("📊 Gemini Data:", ocrData.geminiData);
 
-      const data: OCRResponse = JSON.parse(responseText);
-      console.log("✅ JSON parseado exitosamente:", data);
-
-      if (!data.draftId || !data.geminiData) {
-        throw new Error("Respuesta incompleta del servidor");
+      if (!ocrData.draftId || !ocrData.geminiData) {
+        throw new Error("Respuesta incompleta del servidor OCR");
       }
 
-      console.log("✅ Datos validados correctamente");
-      console.log("🎫 Draft ID:", data.draftId);
-      console.log("📊 Gemini Data:", data.geminiData);
-
-      const ocrData = {
-        draftId: data.draftId,
-        geminiData: data.geminiData,
-        imageUrl: capturedPhoto,
+      // 🔹 Guardar TODO en sessionStorage (ya está en base64)
+      const dataToSave = {
+        draftId: ocrData.draftId,
+        geminiData: ocrData.geminiData,
+        imageUrl: capturedPhoto, // Ya es base64, funciona para todo
+        fileType: fileType,
         timestamp: Date.now(),
         actividadId: id,
         facturaId: facturaData.facturaId
       };
       
-      sessionStorage.setItem('ocrData', JSON.stringify(ocrData));
-      console.log("💾 Datos guardados en sessionStorage");
+      sessionStorage.setItem('ocrData', JSON.stringify(dataToSave));
+      console.log("💾 Datos guardados en sessionStorage (base64)");
 
-      toast.dismiss(loadingToast);
-      toast.success("OCR completado", "Revisa y confirma los datos extraídos");
+      if (loadingToastId) toast.dismiss(loadingToastId);
+      toast.success("Proceso completado", "Factura y OCR procesados correctamente");
 
       console.log("🔄 Navegando a NewBill...");
+      
       navigate("/NewBill", {
         state: {
-          actividadId: id
+          actividadId: id,
+          facturaId: facturaData.facturaId,
+          draftId: ocrData.draftId,
+          geminiData: ocrData.geminiData,
+          imageUrl: capturedPhoto,
+          fileType: fileType
         }
       });
 
     } catch (err) {
-      console.error("❌ Error completo:", err);
-      toast.dismiss(loadingToast);
+      console.error("❌ ERROR CAPTURADO:", err);
+      console.error("❌ Error stack:", err instanceof Error ? err.stack : 'No stack');
+      
+      if (loadingToastId) toast.dismiss(loadingToastId);
       toast.error(
-        "Error en OCR", 
-        err instanceof Error ? err.message : "No se pudo procesar la imagen"
+        "Error en proceso", 
+        err instanceof Error ? err.message : "No se pudo procesar el archivo"
       );
     } finally {
       setLoading(false);
       closeCamera();
       setShowApproval(false);
+      setCapturedPhoto(null);
+      setFileType(null);
     }
   };
 
   const handleRetake = () => {
-    toast.info("Repitiendo foto", "Toma una nueva fotografía");
+    toast.info("Repitiendo captura", "Toma una nueva fotografía o selecciona otro archivo");
     setCapturedPhoto(null);
+    setFileType(null);
     setShowApproval(false);
     if (!/Mobi|Android/i.test(navigator.userAgent)) {
       setShowCamera(true);
@@ -269,9 +316,9 @@ const Bills: React.FC = () => {
   };
 
   const handleCancel = () => {
-    toast.warning("Foto descartada", "La imagen no fue guardada");
-    if (capturedPhoto?.startsWith("blob:")) URL.revokeObjectURL(capturedPhoto);
+    toast.warning("Archivo descartado", "El archivo no fue guardado");
     setCapturedPhoto(null);
+    setFileType(null);
     setShowApproval(false);
     closeCamera();
   };
@@ -292,7 +339,6 @@ const Bills: React.FC = () => {
           Gastos Registrados:
         </h2>
 
-        {/* Loading state */}
         {loadingExpenses ? (
           <div className="flex justify-center items-center py-8">
             <Loader2 className="w-8 h-8 text-button animate-spin" />
@@ -346,7 +392,7 @@ const Bills: React.FC = () => {
         />
         <input
           type="file"
-          accept="image/*,.pdf,.jpg,.png"
+          accept="image/*,.pdf"
           ref={fileInputRef}
           className="hidden"
           onChange={handleFileChange}
@@ -382,11 +428,19 @@ const Bills: React.FC = () => {
                 Vista Previa
               </h3>
 
-              <img
-                src={capturedPhoto}
-                alt="Vista previa"
-                className="w-full rounded-lg shadow-md max-h-64 object-contain bg-gray-100 mb-6"
-              />
+              {fileType === 'pdf' ? (
+                <div className="w-full rounded-lg shadow-md bg-gray-100 mb-6 p-8 flex flex-col items-center justify-center min-h-64">
+                  <FileText className="w-16 h-16 text-red-600 mb-4" />
+                  <p className="text-gray-700 font-semibold">Archivo PDF seleccionado</p>
+                  <p className="text-gray-500 text-sm mt-2">El PDF será procesado correctamente</p>
+                </div>
+              ) : (
+                <img
+                  src={capturedPhoto}
+                  alt="Vista previa"
+                  className="w-full rounded-lg shadow-md max-h-64 object-contain bg-gray-100 mb-6"
+                />
+              )}
 
               <div className="flex gap-3">
                 <button
