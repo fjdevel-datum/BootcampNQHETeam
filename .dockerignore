@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 *
 !target/*-runner
 !target/*-runner.jar
@@ -77,3 +78,20 @@ LICENSE
 src/test/
 *Test.java
 *Tests.java
+=======
+node_modules
+dist
+.git
+.gitignore
+README.md
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+npm-debug.log
+.DS_Store
+coverage
+.vscode
+.idea
+>>>>>>> frontend
