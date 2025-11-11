@@ -2,6 +2,21 @@
 
 # easycheck
 repository proyect
+
+Proyecto Easycheck creado por:
+José Doradea
+Ernesto Muñoz
+Andrea Osorio
+------------------------------------------------
+Si bien la rama main contiene todo el codigo de la app, puede revisar el codigo a detalle dentro de las siguientes ramas:
+Frontend <--- Rama: frontend
+Backend <---- Rama: roleauth
+openkm <----- Rama: end
+-----------------------------------------------
+archivos de importancia:
+docker-compose <-- Rama: mian
+-----------------------------------------------
+
 # app
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
