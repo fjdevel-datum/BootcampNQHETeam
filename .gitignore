@@ -1,0 +1,70 @@
+#Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+.flattened-pom.xml
+
+# Eclipse
+.project
+.classpath
+.settings/
+bin/
+
+# IntelliJ
+.idea
+*.ipr
+*.iml
+*.iws
+
+# NetBeans
+nb-configuration.xml
+
+# Visual Studio Code
+.vscode
+.factorypath
+
+# OSX
+.DS_Store
+
+# Vim
+*.swp
+*.swo
+
+# patch
+*.orig
+*.rej
+
+# Local environment
+.env
+
+# Plugin directory
+/.quarkus/cli/plugins/
+# TLS Certificates
+.certs/
+
+#properties
+*.properties
+
+.credentials
+./tokens
+
+# Docker
+.env
+.env.local
+docker-compose.override.yml
+
+# Firebase Credentials (NUNCA subir a Git)
+serviceAccountKey.json
+tokens/StoredCredential
+tokens/*.json
+
+# Logs
+*.log
+logs/
+
+src/main/java/com/easycheck/infrastructure/resources/credentials/firebaseService.json
+
+# Environment variables
+.env

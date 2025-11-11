@@ -1,0 +1,50 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile.jvm
+    container_name: easycheck-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # Oracle Database
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:oracle:thin:@//host.docker.internal:1521/XEPDB1
+      QUARKUS_DATASOURCE_USERNAME: C##EASYCHECK
+      QUARKUS_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      
+      # Firebase
+      FIREBASE_CREDENTIALS_PATH: /app/config/serviceAccountKey.json
+      FIREBASE_ALLOWED_DOMAINS: ${FIREBASE_ALLOWED_DOMAINS}
+      
+      # Azure Document Intelligence
+      AZURE_DOCUMENTINTELLIGENCE_KEY: ${AZURE_DOCUMENTINTELLIGENCE_KEY}
+      AZURE_DOCUMENTINTELLIGENCE_ENDPOINT: ${AZURE_DOCUMENTINTELLIGENCE_ENDPOINT}
+      
+      # Gemini API
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      
+      # CORS
+      QUARKUS_HTTP_CORS_ORIGINS: http://localhost:5173,http://localhost:3000,http://localhost:80
+      QUARKUS_HTTP_CORS_METHODS: GET,POST,PUT,DELETE,OPTIONS
+      QUARKUS_HTTP_CORS_HEADERS: accept,authorization,content-type,x-requested-with
+      
+      # Logging
+      QUARKUS_LOG_LEVEL: INFO
+      
+    volumes:
+      - ./tokens:/app/config:ro
+    networks:
+      - easycheck-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  easycheck-network:
+    driver: bridge

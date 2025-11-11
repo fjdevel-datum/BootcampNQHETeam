@@ -1,0 +1,79 @@
+*
+!target/*-runner
+!target/*-runner.jar
+!target/lib/*
+!target/quarkus-app/*
+
+# Maven build files
+target/classes/
+target/generated-sources/
+target/maven-status/
+target/maven-archiver/
+target/test-classes/
+target/surefire-reports/
+
+# Maven wrapper
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+
+# Firebase
+serviceAccountKey.json
+tokens/StoredCredential
+tokens/**
+*.key
+*.pem
+*.p12
+*.keystore
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.properties.local
+application-local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.eclipse/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+*~
+
+# Logs y temporales
+*.log
+logs/
+*.tmp
+*.bak
+tmp/
+temp/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+Jenkinsfile
+
+# Documentación
+README.md
+docs/
+*.md
+LICENSE
+
+# Archivos de prueba
+src/test/
+*Test.java
+*Tests.java
